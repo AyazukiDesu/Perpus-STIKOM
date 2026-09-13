@@ -1,0 +1,30 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ buku.judul }}{% endblock %}
+{% block content %}
+<div class="card" style="display:flex; gap:1.5rem;">
+  <div>
+    {% if buku.sampul_path %}
+      <img src="{{ url_for('static', filename=buku.sampul_path.replace('static/', '', 1)) }}" style="width:160px; border-radius:6px;">
+    {% else %}
+      <div class="buku-cover-placeholder" style="width:160px; height:220px;">Tidak ada sampul</div>
+    {% endif %}
+  </div>
+  <div>
+    <h2>{{ buku.judul }}</h2>
+    <p><strong>Penulis:</strong> {{ buku.penulis }}</p>
+    <p><strong>Penerbit:</strong> {{ buku.penerbit or '-' }} ({{ buku.tahun_terbit or '-' }})</p>
+    <p><strong>ISBN:</strong> {{ buku.isbn or '-' }}</p>
+    <p><strong>Kategori:</strong> {{ buku.kategori.nama_kategori if buku.kategori else '-' }}</p>
+    <p><strong>Stok tersedia:</strong> {{ buku.stok }}</p>
+    <p>{{ buku.deskripsi or '' }}</p>
+
+    {% if current_user.is_staf or current_user.is_operator %}
+      <a href="{{ url_for('buku.edit_buku', buku_id=buku.id) }}" class="btn">Edit Buku</a>
+      <a href="{{ url_for('peminjaman.riwayat_buku', buku_id=buku.id) }}" class="btn">Riwayat Peminjaman</a>
+      {% if buku.stok > 0 %}
+        <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=buku.id) }}" class="btn btn-warning">Pinjamkan Buku</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

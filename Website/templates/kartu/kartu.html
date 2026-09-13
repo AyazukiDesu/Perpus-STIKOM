@@ -1,0 +1,22 @@
+{% extends "layout/base.html" %}
+{% block title %}Kartu Anggota{% endblock %}
+{% block content %}
+<h2>Kartu Anggota Digital</h2>
+<div class="kartu-anggota">
+  <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" class="logo-kecil">
+  <div class="label">Kartu Perpustakaan STIKOM Kendari</div>
+  <div class="nomor">{{ kartu.nomor_kartu }}</div>
+  <div style="font-size:1.05rem; margin-bottom:0.5rem;">{{ anggota.nama_lengkap }}</div>
+  <div style="font-size:0.8rem; opacity:0.85;">
+    Terbit: {{ kartu.tanggal_terbit.strftime('%d-%m-%Y') }} &nbsp;|&nbsp;
+    Berlaku s.d.: {{ kartu.tanggal_kadaluarsa.strftime('%d-%m-%Y') }}
+  </div>
+  <div style="margin-top:0.6rem;">
+    {% if kartu.status == 'aktif' %}
+      <span class="badge badge-success">Aktif</span>
+    {% else %}
+      <span class="badge badge-danger">Nonaktif</span>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -27,3 +27,4 @@ Staf/Mahasiswa/Keduanya
 -Sistem login dan registrasi
 -Sistem manajemen buku (stok buku, informasi buku, kategori, dsb)
 -Sistem upload sampul buku ke database
+-Sistem pembuatan format excel jadi tinggal dimasukan data buku nya dari situ terus ketika di uploud bakalan masuk ke database sql

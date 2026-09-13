@@ -1,0 +1,268 @@
+{% extends "layout/base.html" %}
+{% block title %}Daftar Buku{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2>📚 Koleksi Buku</h2>
+  <p class="page-sub" id="labelModeTampilan">Jelajahi koleksi berdasarkan rak kategori, seperti di perpustakaan sungguhan.</p>
+</div>
+
+<form method="GET" class="search-bar">
+  <input type="text" name="q" placeholder="Cari judul, penulis, atau ISBN..." value="{{ q }}">
+  {% if kategori_id %}<input type="hidden" name="kategori_id" value="{{ kategori_id }}">{% endif %}
+  <button class="btn" type="submit">🔍 Cari</button>
+  {% if current_user.is_staf or current_user.is_operator %}
+    <a href="{{ url_for('buku.tambah_buku') }}" class="btn btn-accent">+ Tambah Buku</a>
+  {% endif %}
+</form>
+
+{% if current_user.is_staf or current_user.is_operator %}
+  <div class="mode-tampilan-switch" role="group" aria-label="Ganti mode tampilan">
+    <button type="button" id="btnModeRak" class="mode-btn" onclick="setModeTampilan('rak')">🗂️ Mode Rak</button>
+    <button type="button" id="btnModeProfesional" class="mode-btn" onclick="setModeTampilan('profesional')">📊 Mode Profesional</button>
+  </div>
+{% endif %}
+
+<div id="viewRak">
+<div class="kategori-chips">
+  <a href="{{ url_for('buku.daftar_buku', **({'q': q} if q else {})) }}"
+     class="chip{{ ' chip-active' if not kategori_id else '' }}">Semua Rak</a>
+  {% for k in kategori_list %}
+    <a href="{{ url_for('buku.daftar_buku', kategori_id=k.id, **({'q': q} if q else {})) }}"
+       class="chip{{ ' chip-active' if kategori_id == k.id else '' }}">{{ k.nama_kategori }}</a>
+  {% endfor %}
+</div>
+
+{% if not daftar %}
+  <div class="card empty-state">
+    <div class="empty-icon">📭</div>
+    <p>Tidak ada buku ditemukan. Coba kata kunci atau kategori lain.</p>
+  </div>
+{% else %}
+  {% for nama_kategori, buku_list in kelompok.items() %}
+    <section class="rak-section">
+      <div class="rak-header">
+        <h3><span class="rak-icon">🗂️</span>{{ nama_kategori }}</h3>
+        <span class="rak-count">{{ buku_list|length }} judul</span>
+      </div>
+      <div class="buku-grid">
+        {% for b in buku_list %}
+          <div class="buku-card">
+            <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-card-cover">
+              {% if b.sampul_path %}
+                <img src="{{ url_for('static', filename=b.sampul_path.replace('static/', '', 1)) }}" alt="Sampul {{ b.judul }}">
+              {% else %}
+                <div class="buku-cover-placeholder">Tidak ada sampul</div>
+              {% endif %}
+              <span class="buku-stok-badge {{ 'stok-habis' if b.stok == 0 else '' }}">
+                {{ '📕 Kosong' if b.stok == 0 else '📗 ' ~ b.stok ~ ' stok' }}
+              </span>
+            </a>
+            <div class="buku-card-body">
+              <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-judul">{{ b.judul }}</a>
+              <div class="buku-penulis">✍️ {{ b.penulis }}</div>
+              {% if current_user.is_staf or current_user.is_operator %}
+                <div class="buku-card-actions">
+                  <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm">Edit</a>
+                  {% if b.stok > 0 %}
+                    <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=b.id) }}" class="btn btn-sm btn-warning">Pinjamkan</a>
+                  {% endif %}
+                  {% if current_user.is_operator %}
+                    <form method="POST" action="{{ url_for('buku.hapus_buku', buku_id=b.id) }}"
+                          onsubmit="return confirm('Yakin hapus buku ini?');">
+                      <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+{% endif %}
+</div>
+
+{% if current_user.is_staf or current_user.is_operator %}
+<div id="viewProfesional" style="display:none;">
+  {% if not daftar %}
+    <div class="card empty-state">
+      <div class="empty-icon">📭</div>
+      <p>Tidak ada buku ditemukan. Coba kata kunci atau kategori lain.</p>
+    </div>
+  {% else %}
+    <div class="card excel-card" id="excelCard">
+      <div class="excel-toolbar">
+        <span class="excel-toolbar-title">📊 Stok Buku — Tampilan Spreadsheet</span>
+        <button type="button" id="btnFullscreenExcel" class="btn btn-sm btn-muted" onclick="toggleFullscreenExcel()">⛶ Layar Penuh</button>
+      </div>
+      <div class="table-scroll">
+        <table class="tabel-excel">
+          <thead>
+            <tr>
+              <th style="width:2.5rem;">No</th>
+              <th>Judul</th>
+              <th>Penulis</th>
+              <th>Penerbit</th>
+              <th>Tahun</th>
+              <th>ISBN</th>
+              <th>Kategori</th>
+              <th style="text-align:right;">Stok</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in daftar %}
+              <tr class="{{ 'baris-stok-habis' if b.stok == 0 else '' }}">
+                <td class="sel-angka">{{ loop.index }}</td>
+                <td><a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}">{{ b.judul }}</a></td>
+                <td>{{ b.penulis }}</td>
+                <td>{{ b.penerbit or '-' }}</td>
+                <td class="sel-angka">{{ b.tahun_terbit or '-' }}</td>
+                <td>{{ b.isbn or '-' }}</td>
+                <td>{{ b.kategori.nama_kategori if b.kategori else '-' }}</td>
+                <td class="sel-angka">{{ b.stok }}</td>
+                <td class="sel-aksi">
+                  <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm">Edit</a>
+                  {% if b.stok > 0 %}
+                    <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=b.id) }}" class="btn btn-sm btn-warning">Pinjamkan</a>
+                  {% endif %}
+                  {% if current_user.is_operator %}
+                    <form method="POST" action="{{ url_for('buku.hapus_buku', buku_id=b.id) }}"
+                          onsubmit="return confirm('Yakin hapus buku ini?');" style="display:inline;">
+                      <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="excel-footnote">{{ daftar|length }} judul ditampilkan · klik header kolom untuk mengurutkan.</p>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ---- Mode Tampilan (Rak / Profesional) — khusus staf & operator ----
+  // Murni tampilan di sisi browser: memakai data yang sama yang sudah
+  // dirender server (elemen viewProfesional hanya disembunyikan/ditampilkan
+  // lewat CSS), jadi TIDAK ada request/endpoint baru dan TIDAK mengubah
+  // data/alur backend sama sekali — aman dari risiko bug di sistem lain.
+  function setModeTampilan(mode) {
+    var viewRak = document.getElementById('viewRak');
+    var viewPro = document.getElementById('viewProfesional');
+    var btnRak = document.getElementById('btnModeRak');
+    var btnPro = document.getElementById('btnModeProfesional');
+    var label = document.getElementById('labelModeTampilan');
+    if (!viewRak) return; // halaman ini tidak punya toggle (bukan staf/operator)
+
+    if (mode === 'profesional' && viewPro) {
+      viewRak.style.display = 'none';
+      viewPro.style.display = 'block';
+      if (btnRak) btnRak.classList.remove('mode-btn-active');
+      if (btnPro) btnPro.classList.add('mode-btn-active');
+      if (label) label.textContent = 'Mode profesional: data stok ditampilkan padat seperti spreadsheet, tanpa sampul.';
+    } else {
+      viewRak.style.display = 'block';
+      if (viewPro) viewPro.style.display = 'none';
+      if (btnRak) btnRak.classList.add('mode-btn-active');
+      if (btnPro) btnPro.classList.remove('mode-btn-active');
+      if (label) label.textContent = 'Jelajahi koleksi berdasarkan rak kategori, seperti di perpustakaan sungguhan.';
+    }
+    try { localStorage.setItem('modeTampilanBuku', mode); } catch (e) { /* abaikan jika storage diblokir */ }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var tersimpan = 'rak';
+    try { tersimpan = localStorage.getItem('modeTampilanBuku') || 'rak'; } catch (e) {}
+    setModeTampilan(tersimpan);
+
+    // urutkan tabel Excel dengan klik header kolom (naik/turun bergantian)
+    var tabel = document.querySelector('.tabel-excel');
+    if (!tabel) return;
+    var ths = tabel.querySelectorAll('thead th');
+    ths.forEach(function (th, idx) {
+      if (idx === 0 || idx === ths.length - 1) return; // lewati kolom No & Aksi
+      th.style.cursor = 'pointer';
+      th.title = 'Klik untuk urutkan';
+      th.addEventListener('click', function () {
+        var tbody = tabel.querySelector('tbody');
+        var baris = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        var naik = th.getAttribute('data-urut') !== 'naik';
+        ths.forEach(function (t) { t.removeAttribute('data-urut'); });
+        th.setAttribute('data-urut', naik ? 'naik' : 'turun');
+
+        baris.sort(function (a, b) {
+          var va = a.children[idx].textContent.trim();
+          var vb = b.children[idx].textContent.trim();
+          var na = parseFloat(va), nb = parseFloat(vb);
+          var cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : va.localeCompare(vb, 'id');
+          return naik ? cmp : -cmp;
+        });
+        baris.forEach(function (tr, i) {
+          tr.children[0].textContent = i + 1; // penomoran ulang kolom "No"
+          tbody.appendChild(tr);
+        });
+      });
+    });
+  });
+
+  // ---- Layar Penuh untuk Mode Profesional ----
+  // Pakai Fullscreen API bawaan browser (dengan fallback prefix vendor
+  // untuk Safari/iOS lama). Murni interaksi tampilan, tidak menyentuh
+  // data/route apapun -> aman, tidak ada risiko bug ke bagian lain.
+  function elemenExcel() { return document.getElementById('excelCard'); }
+
+  function toggleFullscreenExcel() {
+    var el = elemenExcel();
+    if (!el) return;
+    var sedangFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+    if (!sedangFullscreen) {
+      var minta = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (minta) {
+        minta.call(el);
+      } else {
+        // browser tidak mendukung Fullscreen API -> pakai mode "layar penuh semu"
+        // (memenuhi layar lewat CSS) sebagai fallback, supaya tombol tetap berfungsi.
+        el.classList.toggle('excel-fullscreen-fallback');
+        perbaruiTombolFullscreen();
+      }
+    } else {
+      var keluar = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (keluar) keluar.call(document);
+    }
+  }
+
+  function perbaruiTombolFullscreen() {
+    var btn = document.getElementById('btnFullscreenExcel');
+    var el = elemenExcel();
+    if (!btn || !el) return;
+    var aktif = document.fullscreenElement === el || document.webkitFullscreenElement === el
+      || document.msFullscreenElement === el || el.classList.contains('excel-fullscreen-fallback');
+    btn.innerHTML = aktif ? '✕ Keluar Layar Penuh' : '⛶ Layar Penuh';
+    el.classList.toggle('excel-fullscreen-active', aktif);
+  }
+
+  document.addEventListener('fullscreenchange', perbaruiTombolFullscreen);
+  document.addEventListener('webkitfullscreenchange', perbaruiTombolFullscreen);
+  document.addEventListener('MSFullscreenChange', perbaruiTombolFullscreen);
+
+  // ESC untuk keluar dari mode fallback (karena bukan Fullscreen API asli,
+  // browser tidak otomatis menangani tombol Esc untuk kasus ini)
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var el = elemenExcel();
+      if (el && el.classList.contains('excel-fullscreen-fallback')) {
+        el.classList.remove('excel-fullscreen-fallback');
+        perbaruiTombolFullscreen();
+      }
+    }
+  });
+</script>
+{% endblock %}

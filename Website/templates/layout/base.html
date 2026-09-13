@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#4a1620">
+  <title>{% block title %}Perpustakaan{% endblock %} - STIKOM Kendari</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/logo_stikom.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script>
+    /* Terapkan tema tersimpan SEBELUM halaman dirender, agar tidak "berkedip" */
+    (function () {
+      var tema = localStorage.getItem('tema') || 'light';
+      document.documentElement.setAttribute('data-theme', tema);
+    })();
+  </script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="hamburger" id="btnHamburger" aria-label="Buka menu" onclick="toggleMenuMobile()">☰</button>
+      <a href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}" class="brand">
+        <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo STIKOM Kendari">
+        <span>Perpustakaan STIKOM Kendari</span>
+      </a>
+    </div>
+
+    <div class="navbar-links" id="navLinks">
+      {% if current_user.is_authenticated %}
+        <a class="nav-link" href="{{ url_for('dashboard.index') }}"><span class="nav-icon">🏠</span>Dashboard</a>
+
+        {% if current_user.is_anggota %}
+          <a class="nav-link" href="{{ url_for('buku.daftar_buku') }}"><span class="nav-icon">📚</span>Koleksi Buku</a>
+          <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><span class="nav-icon">🪪</span>Kartu Anggota</a>
+          <a class="nav-link" href="{{ url_for('peminjaman.riwayat_saya') }}"><span class="nav-icon">🕘</span>Riwayat Saya</a>
+        {% endif %}
+
+        {% if current_user.is_staf or current_user.is_operator %}
+          <div class="nav-dropdown">
+            <button type="button" class="nav-link nav-dropdown-toggle">
+              <span class="nav-icon">📚</span>Koleksi Buku <span class="nav-caret">▾</span>
+            </button>
+            <div class="nav-dropdown-menu">
+              <a href="{{ url_for('buku.daftar_buku') }}">🔖 Daftar Buku</a>
+              <a href="{{ url_for('buku.kategori') }}">🗂️ Kategori</a>
+              <a href="{{ url_for('buku.import_excel') }}">📥 Import Excel</a>
+            </div>
+          </div>
+          <a class="nav-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}"><span class="nav-icon">📖</span>Peminjaman</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-link nav-dropdown-toggle">
+              <span class="nav-icon">📊</span>Laporan <span class="nav-caret">▾</span>
+            </button>
+            <div class="nav-dropdown-menu">
+              <a href="{{ url_for('laporan.buku_populer') }}">🔥 Buku Populer</a>
+              <a href="{{ url_for('laporan.buku_tidak_populer') }}">💤 Buku Tidak Populer</a>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if current_user.is_operator %}
+          <a class="nav-link" href="{{ url_for('auth.daftar_pengguna') }}"><span class="nav-icon">👤</span>Pengguna</a>
+          <a class="nav-link" href="{{ url_for('auth.daftar_persetujuan') }}">
+            <span class="nav-icon">✅</span>Persetujuan
+            {% if jumlah_pending_akun %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pending_akun }}</span>{% endif %}
+          </a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="navbar-right">
+      {% if current_user.is_authenticated %}
+        <span class="user-chip">{{ current_user.nama_lengkap }} · {{ current_user.role }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-accent">Logout</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-accent">Login</a>
+        <a href="{{ url_for('auth.register') }}" style="color:#f4e9d8; font-size:0.85rem;">Daftar</a>
+      {% endif %}
+      <button class="theme-toggle" id="btnTema" onclick="toggleTema()" aria-label="Ganti mode gelap/terang" title="Ganti mode gelap/terang">
+        <span id="iconTema">🌙</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <div class="footer">
+    &copy; {{ 2026 }} Perpustakaan STIKOM Kendari — dijalankan secara lokal.
+  </div>
+
+  <script>
+    function toggleTema() {
+      var root = document.documentElement;
+      var temaSekarang = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', temaSekarang);
+      localStorage.setItem('tema', temaSekarang);
+      perbaruiIkonTema();
+    }
+
+    function perbaruiIkonTema() {
+      var tema = document.documentElement.getAttribute('data-theme');
+      var icon = document.getElementById('iconTema');
+      if (icon) icon.textContent = tema === 'dark' ? '☀️' : '🌙';
+    }
+
+    function toggleMenuMobile() {
+      document.getElementById('navLinks').classList.toggle('open');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      perbaruiIkonTema();
+
+      // tandai link menu yang sedang aktif (termasuk yang ada di dalam dropdown)
+      var path = window.location.pathname;
+      document.querySelectorAll('.navbar-links a').forEach(function (a) {
+        if (a.getAttribute('href') === path) {
+          a.classList.add('active');
+          var dropdownParent = a.closest('.nav-dropdown');
+          if (dropdownParent) {
+            dropdownParent.querySelector('.nav-dropdown-toggle').classList.add('active');
+          }
+        }
+      });
+
+      // tutup menu mobile otomatis saat memilih salah satu link
+      document.querySelectorAll('.navbar-links a').forEach(function (a) {
+        a.addEventListener('click', function () {
+          document.getElementById('navLinks').classList.remove('open');
+          document.querySelectorAll('.nav-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
+        });
+      });
+
+      // buka/tutup dropdown navbar (klik, agar konsisten di desktop & mobile/sentuh)
+      document.querySelectorAll('.nav-dropdown-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var dropdown = btn.closest('.nav-dropdown');
+          var sudahTerbuka = dropdown.classList.contains('open');
+          document.querySelectorAll('.nav-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
+          if (!sudahTerbuka) dropdown.classList.add('open');
+        });
+      });
+
+      // klik di luar dropdown akan menutupnya
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.nav-dropdown')) {
+          document.querySelectorAll('.nav-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
+        }
+      });
+
+      // notifikasi flash otomatis hilang setelah beberapa detik
+      document.querySelectorAll('.flash').forEach(function (el) {
+        setTimeout(function () {
+          el.style.transition = 'opacity 0.4s ease';
+          el.style.opacity = '0';
+          setTimeout(function () { el.remove(); }, 400);
+        }, 4000);
+      });
+
+      // animasi hitung naik untuk angka di kotak statistik dashboard
+      document.querySelectorAll('.stat-box .angka').forEach(function (el) {
+        var target = parseInt(el.textContent.replace(/\D/g, ''), 10);
+        if (isNaN(target)) return;
+        var mulaiWaktu = null;
+        var durasi = 700;
+        function langkah(waktu) {
+          if (!mulaiWaktu) mulaiWaktu = waktu;
+          var progres = Math.min((waktu - mulaiWaktu) / durasi, 1);
+          el.textContent = Math.floor(progres * target);
+          if (progres < 1) requestAnimationFrame(langkah);
+          else el.textContent = target;
+        }
+        requestAnimationFrame(langkah);
+      });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

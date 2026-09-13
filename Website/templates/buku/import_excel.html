@@ -1,0 +1,23 @@
+{% extends "layout/base.html" %}
+{% block title %}Import Buku dari Excel{% endblock %}
+{% block content %}
+<div class="card" style="max-width:550px;">
+  <h2>Import Data Buku dari Excel</h2>
+  <p>
+    1. Unduh template kosong terlebih dahulu.<br>
+    2. Isi data buku pada template tersebut (jangan mengubah nama kolom di baris pertama).<br>
+    3. Upload kembali file .xlsx yang sudah diisi.
+  </p>
+  <a href="{{ url_for('buku.download_template_excel') }}" class="btn">⬇ Unduh Template Excel</a>
+
+  <hr style="margin:1.2rem 0;">
+
+  <form method="POST" enctype="multipart/form-data">
+    <div class="form-group">
+      <label>File Excel (.xlsx)</label>
+      <input type="file" name="file_excel" accept=".xlsx" required>
+    </div>
+    <button class="btn" type="submit">Upload & Import</button>
+  </form>
+</div>
+{% endblock %}

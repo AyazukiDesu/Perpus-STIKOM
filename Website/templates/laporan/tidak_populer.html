@@ -1,0 +1,45 @@
+{% extends "layout/base.html" %}
+{% block title %}Buku Tidak Populer{% endblock %}
+{% block content %}
+<h2>📉 Statistik Buku Tidak Populer</h2>
+
+<h3>Belum Pernah Dipinjam Sama Sekali</h3>
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Judul</th><th>Penulis</th><th>Stok</th></tr></thead>
+    <tbody>
+      {% for buku in tidak_pernah %}
+      <tr>
+        <td><a href="{{ url_for('buku.detail_buku', buku_id=buku.id) }}">{{ buku.judul }}</a></td>
+        <td>{{ buku.penulis }}</td>
+        <td>{{ buku.stok }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3">Semua buku pernah dipinjam minimal 1 kali.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+
+<h3>Jarang Dipinjam (maks. 2 kali)</h3>
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Judul</th><th>Penulis</th><th>Jumlah Dipinjam</th></tr></thead>
+    <tbody>
+      {% for buku, jumlah in jarang %}
+      <tr>
+        <td><a href="{{ url_for('buku.detail_buku', buku_id=buku.id) }}">{{ buku.judul }}</a></td>
+        <td>{{ buku.penulis }}</td>
+        <td>{{ jumlah }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3">Tidak ada data.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+{% endblock %}

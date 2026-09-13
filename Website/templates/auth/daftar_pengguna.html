@@ -1,0 +1,50 @@
+{% extends "layout/base.html" %}
+{% block title %}Manajemen Pengguna{% endblock %}
+{% block content %}
+<h2>Manajemen Pengguna</h2>
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+  <a href="{{ url_for('auth.tambah_pengguna') }}" class="btn">+ Tambah Staf/Operator</a>
+  <a href="{{ url_for('auth.daftar_persetujuan') }}" class="btn btn-accent">
+    ✅ Persetujuan Akun Baru
+    {% if jumlah_pending_akun %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pending_akun }}</span>{% endif %}
+  </a>
+</div>
+
+<div class="card" style="margin-top:1rem;">
+  <div class="table-scroll">
+  <table>
+    <thead>
+      <tr><th>Nama</th><th>Username</th><th>Email</th><th>Role</th><th>Persetujuan</th><th>Status</th><th>Aksi</th></tr>
+    </thead>
+    <tbody>
+      {% for u in pengguna %}
+      <tr>
+        <td>{{ u.nama_lengkap }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
+        <td>
+          {% if u.status_akun == 'disetujui' %}<span class="badge badge-success">Disetujui</span>
+          {% elif u.status_akun == 'pending' %}<span class="badge badge-warning">Menunggu</span>
+          {% else %}<span class="badge badge-danger">Ditolak</span>{% endif %}
+        </td>
+        <td>
+          {% if u.is_active_db %}<span class="badge badge-success">Aktif</span>
+          {% else %}<span class="badge badge-danger">Nonaktif</span>{% endif %}
+        </td>
+        <td>
+          {% if u.id != current_user.id %}
+          <form method="POST" action="{{ url_for('auth.toggle_aktif_pengguna', user_id=u.id) }}" style="display:inline;">
+            <button class="btn btn-sm btn-warning" type="submit">
+              {{ 'Nonaktifkan' if u.is_active_db else 'Aktifkan' }}
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.env
+static/uploads/sampul/*
+!static/uploads/sampul/.gitkeep
+instance/

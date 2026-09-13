@@ -1,0 +1,24 @@
+{% extends "layout/base.html" %}
+{% block title %}Buku Populer{% endblock %}
+{% block content %}
+<h2>📈 Statistik Buku Paling Populer</h2>
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>#</th><th>Judul</th><th>Penulis</th><th>Jumlah Dipinjam</th></tr></thead>
+    <tbody>
+      {% for buku, jumlah in hasil %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('buku.detail_buku', buku_id=buku.id) }}">{{ buku.judul }}</a></td>
+        <td>{{ buku.penulis }}</td>
+        <td>{{ jumlah }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Belum ada data peminjaman.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+{% endblock %}

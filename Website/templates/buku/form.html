@@ -1,0 +1,174 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ 'Edit' if buku else 'Tambah' }} Buku{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:600px;">
+  <h2>{{ 'Edit Buku' if buku else 'Tambah Buku Baru' }}</h2>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="form-group">
+      <label>Judul</label>
+      <input type="text" name="judul" required value="{{ buku.judul if buku else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Penulis</label>
+      <input type="text" name="penulis" required value="{{ buku.penulis if buku else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Penerbit</label>
+      <input type="text" name="penerbit" value="{{ buku.penerbit if buku else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Tahun Terbit</label>
+      <input type="number" name="tahun_terbit" value="{{ buku.tahun_terbit if buku else '' }}">
+    </div>
+    <div class="form-group">
+      <label>ISBN</label>
+      <input type="text" name="isbn" value="{{ buku.isbn if buku else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Kategori</label>
+      <select name="kategori_id">
+        <option value="">- Pilih Kategori -</option>
+        {% for k in kategori_list %}
+          <option value="{{ k.id }}" {% if buku and buku.kategori_id == k.id %}selected{% endif %}>{{ k.nama_kategori }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Stok</label>
+      <input type="number" name="stok" min="0" value="{{ buku.stok if buku else 0 }}">
+    </div>
+    <div class="form-group">
+      <label>Deskripsi</label>
+      <textarea name="deskripsi" rows="3">{{ buku.deskripsi if buku else '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Sampul Buku (gambar)</label>
+      <div class="sampul-uploader">
+        <div class="sampul-preview-box">
+          <img id="previewSampul" class="buku-cover"
+               {% if buku and buku.sampul_path %}
+                 src="{{ url_for('static', filename=buku.sampul_path.replace('static/', '', 1)) }}"
+               {% else %}
+                 style="display:none;"
+               {% endif %}>
+          <div class="buku-cover-placeholder" id="previewPlaceholder"
+               {% if buku and buku.sampul_path %}style="display:none;"{% endif %}>Belum ada sampul</div>
+        </div>
+        <div class="sampul-uploader-actions">
+          <label for="inputSampul" class="btn btn-sm btn-accent">🖼️ Pilih &amp; Crop Sampul</label>
+          <input type="file" name="sampul" id="inputSampul" accept="image/*" hidden>
+          <p class="sampul-hint">Foto akan dipotong otomatis mengikuti rasio sampul buku sebelum diunggah.</p>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" type="submit">Simpan</button>
+    <a href="{{ url_for('buku.daftar_buku') }}" class="btn btn-sm" style="background:#888;">Batal</a>
+  </form>
+</div>
+
+<!-- Modal crop sampul -->
+<div class="crop-modal" id="cropModal">
+  <div class="crop-modal-backdrop"></div>
+  <div class="crop-modal-box">
+    <h3>✂️ Sesuaikan Sampul Buku</h3>
+    <div class="crop-modal-image-wrap">
+      <img id="cropTargetImage" src="" alt="Gambar untuk dipotong">
+    </div>
+    <p class="crop-modal-hint">Geser &amp; perbesar/kecilkan area kotak untuk memilih bagian sampul.</p>
+    <div class="crop-modal-actions">
+      <button type="button" class="btn btn-sm btn-muted" id="btnBatalCrop">Batal</button>
+      <button type="button" class="btn btn-sm" id="btnCropTerapkan">✅ Gunakan Potongan Ini</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script>
+(function () {
+  var inputSampul = document.getElementById('inputSampul');
+  var modal = document.getElementById('cropModal');
+  var cropImage = document.getElementById('cropTargetImage');
+  var btnBatal = document.getElementById('btnBatalCrop');
+  var btnTerapkan = document.getElementById('btnCropTerapkan');
+  var previewImg = document.getElementById('previewSampul');
+  var previewPlaceholder = document.getElementById('previewPlaceholder');
+  var cropperInstance = null;
+  var namaFileAsli = 'sampul.jpg';
+
+  if (!inputSampul) return;
+
+  // Rasio sampul buku, mengikuti rasio kartu sampul di tampilan daftar buku
+  var RASIO_SAMPUL = 3 / 4.3;
+
+  inputSampul.addEventListener('change', function () {
+    var file = inputSampul.files && inputSampul.files[0];
+    if (!file) return;
+    namaFileAsli = file.name;
+
+    var url = URL.createObjectURL(file);
+    cropImage.src = url;
+    modal.classList.add('open');
+
+    cropImage.onload = function () {
+      if (cropperInstance) cropperInstance.destroy();
+      cropperInstance = new Cropper(cropImage, {
+        aspectRatio: RASIO_SAMPUL,
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 1,
+        background: false,
+        responsive: true,
+      });
+    };
+  });
+
+  function tutupModal() {
+    modal.classList.remove('open');
+    if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+  }
+
+  btnBatal.addEventListener('click', function () {
+    inputSampul.value = '';
+    tutupModal();
+  });
+
+  // Tutup modal juga saat klik area gelap di luar kotak crop
+  modal.querySelector('.crop-modal-backdrop').addEventListener('click', function () {
+    inputSampul.value = '';
+    tutupModal();
+  });
+
+  btnTerapkan.addEventListener('click', function () {
+    if (!cropperInstance) return;
+    cropperInstance.getCroppedCanvas({
+      width: 600,
+      height: Math.round(600 / RASIO_SAMPUL),
+      imageSmoothingQuality: 'high',
+    }).toBlob(function (blob) {
+      var namaBaru = namaFileAsli.replace(/\.[^.]+$/, '') + '.jpg';
+      var fileHasil = new File([blob], namaBaru, { type: 'image/jpeg' });
+
+      var dt = new DataTransfer();
+      dt.items.add(fileHasil);
+      inputSampul.files = dt.files;
+
+      var previewUrl = URL.createObjectURL(blob);
+      previewImg.src = previewUrl;
+      previewImg.style.display = 'block';
+      if (previewPlaceholder) previewPlaceholder.style.display = 'none';
+
+      tutupModal();
+    }, 'image/jpeg', 0.9);
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "layout/base.html" %}
+{% block title %}Kategori Buku{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2>🗂️ Kategori Buku</h2>
+  <p class="page-sub">Kelola rak kategori supaya koleksi buku mudah ditemukan.</p>
+</div>
+
+<div class="card kategori-form-card">
+  <form method="POST" class="kategori-form">
+    <input type="text" name="nama_kategori" placeholder="Nama kategori baru, mis. Fiksi, Sejarah, Teknologi..." required>
+    <button class="btn btn-accent" type="submit">+ Tambah Kategori</button>
+  </form>
+</div>
+
+{% if kategori_list %}
+<div class="kategori-grid">
+  {% for k in kategori_list %}
+    <a href="{{ url_for('buku.daftar_buku', kategori_id=k.id) }}" class="kategori-card">
+      <div class="kategori-icon">📚</div>
+      <div class="kategori-nama">{{ k.nama_kategori }}</div>
+      <div class="kategori-jumlah">{{ k.buku_list|length }} buku</div>
+    </a>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="card empty-state">
+    <div class="empty-icon">🗂️</div>
+    <p>Belum ada kategori. Tambahkan kategori pertama Anda di atas.</p>
+  </div>
+{% endif %}
+{% endblock %}

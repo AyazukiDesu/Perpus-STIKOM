@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% block title %}Persetujuan Akun{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2>✅ Persetujuan Akun Anggota Baru</h2>
+  <p class="page-sub">Registrasi mandiri lewat halaman publik harus disetujui di sini sebelum anggota bisa login.</p>
+</div>
+
+<a href="{{ url_for('auth.daftar_pengguna') }}" class="btn btn-sm btn-muted" style="margin-bottom:1rem;">&larr; Kembali ke Manajemen Pengguna</a>
+
+{% if not pending %}
+  <div class="card empty-state">
+    <div class="empty-icon">📭</div>
+    <p>Tidak ada pendaftaran yang menunggu persetujuan saat ini.</p>
+  </div>
+{% else %}
+  <div class="card">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Nama Lengkap</th><th>Username</th><th>Email</th><th>Daftar Pada</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        {% for u in pending %}
+        <tr>
+          <td>{{ u.nama_lengkap }}</td>
+          <td>{{ u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+          <td style="white-space:nowrap;">
+            <form method="POST" action="{{ url_for('auth.setujui_pengguna', user_id=u.id) }}" style="display:inline;">
+              <button class="btn btn-sm" type="submit" style="background:var(--success);">Setujui</button>
+            </form>
+            <form method="POST" action="{{ url_for('auth.tolak_pengguna', user_id=u.id) }}" style="display:inline;"
+                  onsubmit="return confirm('Yakin tolak registrasi &quot;' + '{{ u.username }}' + '&quot;?');">
+              <button class="btn btn-sm btn-danger" type="submit">Tolak</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

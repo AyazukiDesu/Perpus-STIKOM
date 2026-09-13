@@ -1,0 +1,36 @@
+{% extends "layout/base.html" %}
+{% block title %}Riwayat Peminjaman{% endblock %}
+{% block content %}
+<h2>Riwayat Peminjaman - {{ anggota.nama_lengkap }}</h2>
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead>
+      <tr><th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Denda</th></tr>
+    </thead>
+    <tbody>
+      {% for p in daftar %}
+      <tr>
+        <td>{{ p.buku.judul }}</td>
+        <td>{{ p.tanggal_pinjam.strftime('%d-%m-%Y') }}</td>
+        <td>{{ p.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}</td>
+        <td>{{ p.tanggal_kembali.strftime('%d-%m-%Y') if p.tanggal_kembali else '-' }}</td>
+        <td>
+          {% if p.status == 'dikembalikan' %}
+            <span class="badge badge-success">Dikembalikan</span>
+          {% elif p.is_telat %}
+            <span class="badge badge-danger">Terlambat</span>
+          {% else %}
+            <span class="badge badge-info">Dipinjam</span>
+          {% endif %}
+        </td>
+        <td>{{ 'Rp' ~ '{:,}'.format(p.denda) if p.denda else '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Belum ada riwayat peminjaman.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</div>
+{% endblock %}
