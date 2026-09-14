@@ -38,6 +38,18 @@ def create_app():
             jumlah = 0
         return {"jumlah_pending_akun": jumlah}
 
+    @app.context_processor
+    def inject_jumlah_pengajuan_peminjaman():
+        # Dipakai navbar/sidebar untuk menampilkan badge jumlah pengajuan
+        # peminjaman yang menunggu ditinjau. Hanya dihitung untuk staf/operator.
+        from flask_login import current_user
+        from models import Peminjaman
+        if current_user.is_authenticated and (current_user.is_staf or current_user.is_operator):
+            jumlah = Peminjaman.query.filter_by(status="diajukan").count()
+        else:
+            jumlah = 0
+        return {"jumlah_pengajuan_peminjaman": jumlah}
+
     # ---- registrasi blueprint ----
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp

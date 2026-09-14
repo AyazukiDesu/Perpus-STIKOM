@@ -9,7 +9,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
 from extensions import db
-from models import Buku, Kategori
+from models import Buku, Kategori, Peminjaman
 from utils.decorators import role_required
 from utils.excel_import import buat_template_excel, import_buku_dari_excel
 
@@ -63,6 +63,16 @@ def daftar_buku():
     daftar = query.order_by(Buku.judul.asc()).all()
     kategori_list = Kategori.query.order_by(Kategori.nama_kategori).all()
 
+    # untuk anggota: buku mana saja yang sudah punya pengajuan/pinjaman aktif,
+    # dihitung sekali di sini (bukan per-kartu) supaya tidak membebani query.
+    buku_id_aktif = set()
+    if current_user.is_anggota:
+        aktif = Peminjaman.query.filter(
+            Peminjaman.user_id == current_user.id,
+            Peminjaman.status.in_(["diajukan", "dipinjam"]),
+        ).all()
+        buku_id_aktif = {p.buku_id for p in aktif}
+
     # Kelompokkan buku per kategori agar tampilannya seperti rak perpustakaan
     # sungguhan: tiap rak (kategori) berisi buku-bukunya sendiri, rapi dan mudah dipahami.
     kelompok = OrderedDict()
@@ -76,7 +86,8 @@ def daftar_buku():
 
     return render_template(
         "buku/daftar.html", daftar=daftar, kelompok=kelompok,
-        kategori_list=kategori_list, q=q, kategori_id=kategori_id
+        kategori_list=kategori_list, q=q, kategori_id=kategori_id,
+        buku_id_aktif=buku_id_aktif,
     )
 
 
@@ -84,7 +95,16 @@ def daftar_buku():
 @login_required
 def detail_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
-    return render_template("buku/detail.html", buku=buku)
+
+    pengajuan_aktif = None
+    if current_user.is_anggota:
+        pengajuan_aktif = Peminjaman.query.filter(
+            Peminjaman.user_id == current_user.id,
+            Peminjaman.buku_id == buku.id,
+            Peminjaman.status.in_(["diajukan", "dipinjam"]),
+        ).first()
+
+    return render_template("buku/detail.html", buku=buku, pengajuan_aktif=pengajuan_aktif)
 
 
 # ------------------------------------------------------------------

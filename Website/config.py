@@ -26,4 +26,22 @@ class Config:
 
     # Batas hari peminjaman default
     LAMA_PINJAM_HARI = 7
-    DENDA_PER_HARI = 1000  # rupiah, jika ingin dipakai
+
+    # Jumlah hari sebelum jatuh tempo untuk mulai menampilkan peringatan
+    # "akan jatuh tempo" ke anggota & staf/operator (menggantikan sistem denda).
+    PERINGATAN_JATUH_TEMPO_HARI = 3
+
+    # Daftar domain email yang dianggap valid saat registrasi/tambah pengguna
+    # (tanpa perlu sistem verifikasi OTP). Silakan tambahkan domain kampus
+    # resmi di sini jika sudah tersedia, mis. "stikomkendari.ac.id".
+    ALLOWED_EMAIL_DOMAINS = [
+        "gmail.com",
+        "yahoo.com",
+        "yahoo.co.id",
+        "outlook.com",
+        "hotmail.com",
+        "live.com",
+        "icloud.com",
+        "proton.me",
+        "protonmail.com",
+    ]

@@ -25,6 +25,27 @@
         <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=buku.id) }}" class="btn btn-warning">Pinjamkan Buku</a>
       {% endif %}
     {% endif %}
+
+    {% if current_user.is_anggota %}
+      {% if pengajuan_aktif %}
+        {% if pengajuan_aktif.status == 'diajukan' %}
+          <div class="flash flash-warning" style="position:static; margin-top:0.8rem;">
+            📝 Pengajuan peminjaman Anda untuk buku ini sedang menunggu persetujuan staf/operator.
+          </div>
+        {% else %}
+          <div class="flash flash-info" style="position:static; margin-top:0.8rem;">
+            📖 Anda sedang meminjam buku ini. Jatuh tempo: {{ pengajuan_aktif.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}.
+          </div>
+        {% endif %}
+      {% elif buku.stok > 0 %}
+        <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=buku.id) }}"
+              onsubmit="return confirm('Ajukan peminjaman buku ini? Permintaan akan ditinjau oleh staf/operator.');" style="margin-top:0.5rem;">
+          <button class="btn btn-accent" type="submit">📝 Ajukan Peminjaman</button>
+        </form>
+      {% else %}
+        <p class="badge badge-danger" style="margin-top:0.5rem;">Stok buku sedang kosong</p>
+      {% endif %}
+    {% endif %}
   </div>
 </div>
 {% endblock %}

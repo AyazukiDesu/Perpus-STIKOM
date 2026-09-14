@@ -73,6 +73,19 @@
                     </form>
                   {% endif %}
                 </div>
+              {% elif current_user.is_anggota %}
+                <div class="buku-card-actions">
+                  {% if b.id in buku_id_aktif %}
+                    <span class="btn btn-sm btn-muted" style="cursor:default;">Sudah diajukan</span>
+                  {% elif b.stok > 0 %}
+                    <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=b.id) }}"
+                          onsubmit="return confirm('Ajukan peminjaman buku ini?');">
+                      <button class="btn btn-sm btn-accent" type="submit">📝 Ajukan</button>
+                    </form>
+                  {% else %}
+                    <span class="btn btn-sm btn-muted" style="cursor:default;">Stok kosong</span>
+                  {% endif %}
+                </div>
               {% endif %}
             </div>
           </div>
@@ -94,7 +107,6 @@
     <div class="card excel-card" id="excelCard">
       <div class="excel-toolbar">
         <span class="excel-toolbar-title">📊 Stok Buku — Tampilan Spreadsheet</span>
-        <button type="button" id="btnFullscreenExcel" class="btn btn-sm btn-muted" onclick="toggleFullscreenExcel()">⛶ Layar Penuh</button>
       </div>
       <div class="table-scroll">
         <table class="tabel-excel">
@@ -210,59 +222,6 @@
         });
       });
     });
-  });
-
-  // ---- Layar Penuh untuk Mode Profesional ----
-  // Pakai Fullscreen API bawaan browser (dengan fallback prefix vendor
-  // untuk Safari/iOS lama). Murni interaksi tampilan, tidak menyentuh
-  // data/route apapun -> aman, tidak ada risiko bug ke bagian lain.
-  function elemenExcel() { return document.getElementById('excelCard'); }
-
-  function toggleFullscreenExcel() {
-    var el = elemenExcel();
-    if (!el) return;
-    var sedangFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-
-    if (!sedangFullscreen) {
-      var minta = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-      if (minta) {
-        minta.call(el);
-      } else {
-        // browser tidak mendukung Fullscreen API -> pakai mode "layar penuh semu"
-        // (memenuhi layar lewat CSS) sebagai fallback, supaya tombol tetap berfungsi.
-        el.classList.toggle('excel-fullscreen-fallback');
-        perbaruiTombolFullscreen();
-      }
-    } else {
-      var keluar = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-      if (keluar) keluar.call(document);
-    }
-  }
-
-  function perbaruiTombolFullscreen() {
-    var btn = document.getElementById('btnFullscreenExcel');
-    var el = elemenExcel();
-    if (!btn || !el) return;
-    var aktif = document.fullscreenElement === el || document.webkitFullscreenElement === el
-      || document.msFullscreenElement === el || el.classList.contains('excel-fullscreen-fallback');
-    btn.innerHTML = aktif ? '✕ Keluar Layar Penuh' : '⛶ Layar Penuh';
-    el.classList.toggle('excel-fullscreen-active', aktif);
-  }
-
-  document.addEventListener('fullscreenchange', perbaruiTombolFullscreen);
-  document.addEventListener('webkitfullscreenchange', perbaruiTombolFullscreen);
-  document.addEventListener('MSFullscreenChange', perbaruiTombolFullscreen);
-
-  // ESC untuk keluar dari mode fallback (karena bukan Fullscreen API asli,
-  // browser tidak otomatis menangani tombol Esc untuk kasus ini)
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      var el = elemenExcel();
-      if (el && el.classList.contains('excel-fullscreen-fallback')) {
-        el.classList.remove('excel-fullscreen-fallback');
-        perbaruiTombolFullscreen();
-      }
-    }
   });
 </script>
 {% endblock %}

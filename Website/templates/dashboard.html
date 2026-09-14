@@ -14,9 +14,29 @@
 {% if current_user.is_anggota %}
   {% if jumlah_terlambat_saya %}
     <div class="flash flash-danger" style="position:static;">
-      ⚠️ Anda memiliki {{ jumlah_terlambat_saya }} buku yang sudah lewat batas waktu pengembalian. Segera kembalikan ke perpustakaan.
+      ⚠️ Anda memiliki {{ jumlah_terlambat_saya }} buku yang sudah <strong>lewat batas waktu</strong> pengembalian. Segera kembalikan ke perpustakaan.
     </div>
   {% endif %}
+  {% if akan_jatuh_tempo_saya %}
+    <div class="flash flash-warning" style="position:static;">
+      ⏰ Anda memiliki {{ akan_jatuh_tempo_saya|length }} buku yang akan <strong>segera jatuh tempo</strong> dalam {{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan. Yuk kembalikan tepat waktu ya!
+    </div>
+  {% endif %}
+
+  <div class="grid-3">
+    <div class="stat-box"><div class="angka">{{ jumlah_sedang_dipinjam }}</div><div class="label">Sedang Dipinjam</div></div>
+    <div class="stat-box"><div class="angka">{{ jumlah_pernah_dipinjam }}</div><div class="label">Total Pernah Dipinjam</div></div>
+    <div class="stat-box">
+      <div class="angka" style="font-size:1.15rem;">
+        {% if kartu_saya %}
+          {% if kartu_saya.status == 'aktif' %}<span class="badge badge-success">Aktif</span>{% else %}<span class="badge badge-danger">Nonaktif</span>{% endif %}
+        {% else %}
+          <span class="badge badge-warning">Belum Terbit</span>
+        {% endif %}
+      </div>
+      <div class="label">Status Kartu Anggota</div>
+    </div>
+  </div>
 
   <h3>Buku yang sedang Anda pinjam</h3>
   {% if pinjaman_aktif %}
@@ -33,6 +53,8 @@
             <td>
               {% if p.is_telat %}
                 <span class="badge badge-danger">Terlambat</span>
+              {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
+                <span class="badge badge-warning">⏰ Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
               {% else %}
                 <span class="badge badge-success">Tepat waktu</span>
               {% endif %}
@@ -46,6 +68,40 @@
   {% else %}
     <p>Anda tidak sedang meminjam buku apapun.</p>
   {% endif %}
+
+  <section class="dash-section">
+    <h3 class="dash-section-title">🔥 Rekomendasi Buku Populer</h3>
+    {% if rekomendasi_buku %}
+      <div class="buku-grid">
+        {% for b, jumlah in rekomendasi_buku %}
+          <div class="buku-card">
+            <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-card-cover">
+              {% if b.sampul_path %}
+                <img src="{{ url_for('static', filename=b.sampul_path.replace('static/', '', 1)) }}" alt="Sampul {{ b.judul }}">
+              {% else %}
+                <div class="buku-cover-placeholder">Tidak ada sampul</div>
+              {% endif %}
+              <span class="buku-stok-badge">🔥 {{ jumlah }}x dipinjam</span>
+            </a>
+            <div class="buku-card-body">
+              <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-judul">{{ b.judul }}</a>
+              <div class="buku-penulis">✍️ {{ b.penulis }}</div>
+              <div class="buku-card-actions">
+                <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=b.id) }}"
+                      onsubmit="return confirm('Ajukan peminjaman buku ini?');">
+                  <button class="btn btn-sm btn-accent" type="submit">📝 Ajukan</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state" style="padding:1rem;">
+        <p style="margin:0;">Belum ada data peminjaman untuk dijadikan rekomendasi. Jelajahi <a href="{{ url_for('buku.daftar_buku') }}">koleksi buku</a> kami!</p>
+      </div>
+    {% endif %}
+  </section>
 
 {% else %}
   {# ================= DASHBOARD STAF & OPERATOR ================= #}
@@ -61,7 +117,7 @@
   </div>
 
   <section class="dash-section">
-    <h3 class="dash-section-title">🔔 Segera Jatuh Tempo <span class="dash-section-sub">(3 hari ke depan)</span></h3>
+    <h3 class="dash-section-title">🔔 Segera Jatuh Tempo <span class="dash-section-sub">({{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan)</span></h3>
     {% if akan_jatuh_tempo %}
       <div class="card">
         <div class="table-scroll">
@@ -84,7 +140,7 @@
       </div>
     {% else %}
       <div class="card empty-state" style="padding:1rem;">
-        <p style="margin:0;">✅ Tidak ada peminjaman yang jatuh tempo dalam 3 hari ke depan.</p>
+        <p style="margin:0;">✅ Tidak ada peminjaman yang jatuh tempo dalam {{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan.</p>
       </div>
     {% endif %}
   </section>

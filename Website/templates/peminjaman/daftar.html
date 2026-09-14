@@ -1,13 +1,22 @@
 {% extends "layout/base.html" %}
 {% block title %}Daftar Peminjaman{% endblock %}
 {% block content %}
-<h2>Daftar Peminjaman</h2>
+<div class="page-head">
+  <h2>📖 Daftar Peminjaman</h2>
+  <p class="page-sub">Kelola peminjaman aktif dan riwayat pengembalian buku.</p>
+</div>
 
 <div class="search-bar">
+  <a href="{{ url_for('peminjaman.daftar_pengajuan') }}" class="btn btn-sm btn-accent">
+    📝 Pengajuan Peminjaman
+    {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
+  </a>
   <a href="{{ url_for('peminjaman.daftar_peminjaman', status='dipinjam') }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='dipinjam' }}">Sedang Dipinjam</a>
   <a href="{{ url_for('peminjaman.daftar_peminjaman', status='dikembalikan') }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='dikembalikan' }}">Sudah Dikembalikan</a>
+  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='ditolak') }}"
+     class="btn btn-sm {{ 'btn-warning' if status_filter=='ditolak' }}">Ditolak</a>
   <a href="{{ url_for('peminjaman.daftar_peminjaman', status='semua') }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='semua' }}">Semua</a>
 </div>
@@ -16,7 +25,7 @@
   <div class="table-scroll">
   <table>
     <thead>
-      <tr><th>Anggota</th><th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Denda</th><th>Aksi</th></tr>
+      <tr><th>Anggota</th><th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Aksi</th></tr>
     </thead>
     <tbody>
       {% for p in daftar %}
@@ -29,24 +38,31 @@
         <td>
           {% if p.status == 'dikembalikan' %}
             <span class="badge badge-success">Dikembalikan</span>
+          {% elif p.status == 'diajukan' %}
+            <span class="badge badge-warning">Menunggu Persetujuan</span>
+          {% elif p.status == 'ditolak' %}
+            <span class="badge badge-danger">Ditolak</span>
           {% elif p.is_telat %}
             <span class="badge badge-danger">Terlambat</span>
+          {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
+            <span class="badge badge-warning">⏰ Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
           {% else %}
             <span class="badge badge-info">Dipinjam</span>
           {% endif %}
         </td>
-        <td>{{ 'Rp' ~ '{:,}'.format(p.denda) if p.denda else '-' }}</td>
         <td>
           {% if p.status == 'dipinjam' %}
           <form method="POST" action="{{ url_for('peminjaman.kembalikan_buku', peminjaman_id=p.id) }}"
                 onsubmit="return confirm('Konfirmasi pengembalian buku ini?');">
             <button class="btn btn-sm" type="submit">Kembalikan</button>
           </form>
+          {% elif p.status == 'diajukan' %}
+            <a href="{{ url_for('peminjaman.daftar_pengajuan') }}" class="btn btn-sm btn-accent">Tinjau</a>
           {% endif %}
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="8">Tidak ada data.</td></tr>
+      <tr><td colspan="7">Tidak ada data.</td></tr>
       {% endfor %}
     </tbody>
   </table>

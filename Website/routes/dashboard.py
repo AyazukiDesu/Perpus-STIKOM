@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import func
 
@@ -90,6 +90,38 @@ def index():
         ).all()
         context["pinjaman_aktif"] = pinjaman_aktif
         context["jumlah_terlambat_saya"] = sum(1 for p in pinjaman_aktif if p.is_telat)
+
+        # peringatan "akan jatuh tempo" (belum telat, tapi tinggal beberapa hari lagi)
+        batas_peringatan = current_app.config["PERINGATAN_JATUH_TEMPO_HARI"]
+        context["akan_jatuh_tempo_saya"] = [
+            p for p in pinjaman_aktif
+            if not p.is_telat and p.hari_menuju_jatuh_tempo is not None
+            and p.hari_menuju_jatuh_tempo <= batas_peringatan
+        ]
+
+        # ringkasan singkat untuk anggota
+        context["jumlah_sedang_dipinjam"] = len(pinjaman_aktif)
+        context["jumlah_pernah_dipinjam"] = Peminjaman.query.filter_by(user_id=current_user.id).count()
+        context["kartu_saya"] = current_user.kartu
+
+        # rekomendasi: buku paling populer (paling sering dipinjam) yang
+        # sedang tersedia stoknya dan belum sedang dipinjam/diajukan anggota ini
+        buku_id_aktif = {p.buku_id for p in Peminjaman.query.filter(
+            Peminjaman.user_id == current_user.id,
+            Peminjaman.status.in_(["diajukan", "dipinjam"]),
+        ).all()}
+        rekomendasi = (
+            db.session.query(Buku, func.count(Peminjaman.id).label("jumlah"))
+            .join(Peminjaman, Peminjaman.buku_id == Buku.id)
+            .filter(Buku.stok > 0)
+            .group_by(Buku.id)
+            .order_by(func.count(Peminjaman.id).desc())
+            .limit(10)
+            .all()
+        )
+        context["rekomendasi_buku"] = [
+            (b, jumlah) for b, jumlah in rekomendasi if b.id not in buku_id_aktif
+        ][:5]
     else:
         # staf & operator melihat ringkasan umum + grafik
         context["total_buku"] = Buku.query.count()
@@ -114,8 +146,8 @@ def index():
         context["labels_grafik_kategori"] = labels_kat
         context["data_grafik_kategori"] = data_kat
 
-        # daftar penting: akan jatuh tempo dalam 3 hari ke depan
-        batas_tempo = date.today() + timedelta(days=3)
+        # daftar penting: akan jatuh tempo dalam N hari ke depan (lihat config.PERINGATAN_JATUH_TEMPO_HARI)
+        batas_tempo = date.today() + timedelta(days=current_app.config["PERINGATAN_JATUH_TEMPO_HARI"])
         context["akan_jatuh_tempo"] = (
             Peminjaman.query.filter(
                 Peminjaman.status == "dipinjam",

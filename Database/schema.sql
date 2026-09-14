@@ -78,8 +78,11 @@ CREATE TABLE IF NOT EXISTS peminjaman (
     tanggal_pinjam DATE NOT NULL,
     tanggal_jatuh_tempo DATE NOT NULL,
     tanggal_kembali DATE DEFAULT NULL,
-    status ENUM('dipinjam', 'dikembalikan', 'terlambat') NOT NULL DEFAULT 'dipinjam',
-    denda INT NOT NULL DEFAULT 0,
+    -- 'diajukan'  : anggota mengajukan sendiri lewat sistem pengajuan peminjaman, menunggu ditinjau.
+    -- 'dipinjam'  : pengajuan disetujui / dipinjamkan langsung oleh staf-operator.
+    -- 'ditolak'   : pengajuan ditolak staf/operator.
+    status ENUM('diajukan', 'dipinjam', 'dikembalikan', 'terlambat', 'ditolak') NOT NULL DEFAULT 'dipinjam',
+    catatan VARCHAR(255) DEFAULT NULL, -- catatan staf/operator, biasanya alasan penolakan
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (buku_id) REFERENCES buku(id) ON DELETE CASCADE,
     FOREIGN KEY (diproses_oleh) REFERENCES users(id) ON DELETE SET NULL

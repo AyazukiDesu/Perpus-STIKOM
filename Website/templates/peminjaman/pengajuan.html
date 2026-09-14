@@ -1,0 +1,60 @@
+{% extends "layout/base.html" %}
+{% block title %}Pengajuan Peminjaman{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2>📝 Pengajuan Peminjaman</h2>
+  <p class="page-sub">Tinjau permintaan peminjaman yang diajukan mandiri oleh anggota, lalu setujui atau tolak.</p>
+</div>
+
+{% if not daftar %}
+  <div class="card empty-state">
+    <div class="empty-icon">📭</div>
+    <p>Tidak ada pengajuan peminjaman yang menunggu saat ini.</p>
+  </div>
+{% else %}
+  <div class="pengajuan-grid">
+    {% for p in daftar %}
+      <div class="card pengajuan-card">
+        <div class="pengajuan-card-head">
+          <span class="badge badge-warning">Menunggu Persetujuan</span>
+          <span class="pengajuan-tanggal">Diajukan sejak {{ p.tanggal_pinjam.strftime('%d-%m-%Y') }}</span>
+        </div>
+        <h3 class="pengajuan-judul">{{ p.buku.judul }}</h3>
+        <p class="pengajuan-meta">✍️ {{ p.buku.penulis }} &nbsp;·&nbsp; 📗 Stok saat ini: {{ p.buku.stok }}</p>
+        <p class="pengajuan-meta"><strong>Pemohon:</strong> {{ p.anggota.nama_lengkap }} ({{ p.anggota.username }})</p>
+
+        <div class="pengajuan-actions">
+          <form method="POST" action="{{ url_for('peminjaman.setujui_pengajuan', peminjaman_id=p.id) }}"
+                onsubmit="return confirm('Setujui pengajuan ini? Stok buku akan berkurang 1.');">
+            <button class="btn btn-sm" style="background:var(--success);" type="submit">✔️ Setujui</button>
+          </form>
+          <button type="button" class="btn btn-sm btn-danger" onclick="bukaTolak({{ p.id }})">✖️ Tolak</button>
+          <a href="{{ url_for('buku.detail_buku', buku_id=p.buku.id) }}" class="btn btn-sm btn-muted">Lihat Buku</a>
+        </div>
+
+        <form id="formTolak{{ p.id }}" method="POST" action="{{ url_for('peminjaman.tolak_pengajuan', peminjaman_id=p.id) }}"
+              class="pengajuan-form-tolak" style="display:none;">
+          <textarea name="catatan" rows="2" placeholder="Alasan penolakan (opsional)..."></textarea>
+          <div class="pengajuan-actions" style="margin-top:0.5rem;">
+            <button class="btn btn-sm btn-danger" type="submit">Kirim Penolakan</button>
+            <button class="btn btn-sm btn-muted" type="button" onclick="tutupTolak({{ p.id }})">Batal</button>
+          </div>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function bukaTolak(id) {
+    var form = document.getElementById('formTolak' + id);
+    if (form) { form.style.display = 'block'; }
+  }
+  function tutupTolak(id) {
+    var form = document.getElementById('formTolak' + id);
+    if (form) { form.style.display = 'none'; }
+  }
+</script>
+{% endblock %}

@@ -116,14 +116,36 @@ class Peminjaman(db.Model):
     tanggal_pinjam = db.Column(db.Date, default=date.today)
     tanggal_jatuh_tempo = db.Column(db.Date, nullable=False)
     tanggal_kembali = db.Column(db.Date)
+    # Alur status:
+    #   'diajukan'     -> anggota mengajukan peminjaman sendiri, menunggu ditinjau staf/operator.
+    #   'dipinjam'     -> pengajuan disetujui (atau dipinjamkan langsung oleh staf/operator di meja).
+    #   'dikembalikan' -> buku sudah dikembalikan.
+    #   'ditolak'      -> pengajuan ditolak staf/operator.
+    #   'terlambat'    -> (dihitung dinamis lewat is_telat, bukan disimpan sebagai status baris)
     status = db.Column(
-        db.Enum("dipinjam", "dikembalikan", "terlambat", name="status_pinjam_enum"),
+        db.Enum("diajukan", "dipinjam", "dikembalikan", "terlambat", "ditolak", name="status_pinjam_enum"),
         default="dipinjam",
     )
-    denda = db.Column(db.Integer, default=0)
+    # Catatan opsional dari staf/operator, biasanya diisi saat menolak pengajuan
+    # agar anggota tahu alasannya.
+    catatan = db.Column(db.String(255))
 
     @property
     def is_telat(self):
-        if self.status == "dikembalikan":
-            return self.tanggal_kembali and self.tanggal_kembali > self.tanggal_jatuh_tempo
+        if self.status in ("dikembalikan", "diajukan", "ditolak"):
+            if self.status == "dikembalikan":
+                return self.tanggal_kembali and self.tanggal_kembali > self.tanggal_jatuh_tempo
+            return False
         return date.today() > self.tanggal_jatuh_tempo
+
+    @property
+    def is_diajukan(self):
+        return self.status == "diajukan"
+
+    @property
+    def hari_menuju_jatuh_tempo(self):
+        """Jumlah hari tersisa menuju jatuh tempo (negatif jika sudah lewat).
+        Hanya relevan untuk peminjaman yang sedang berjalan ('dipinjam')."""
+        if self.status != "dipinjam":
+            return None
+        return (self.tanggal_jatuh_tempo - date.today()).days

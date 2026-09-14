@@ -1,12 +1,18 @@
 {% extends "layout/base.html" %}
 {% block title %}Riwayat Peminjaman{% endblock %}
 {% block content %}
-<h2>Riwayat Peminjaman - {{ anggota.nama_lengkap }}</h2>
+<div class="page-head">
+  <h2>🕘 {{ 'Riwayat & Pengajuan Saya' if bisa_batalkan else 'Riwayat Peminjaman - ' ~ anggota.nama_lengkap }}</h2>
+  {% if bisa_batalkan %}<p class="page-sub">Semua pengajuan dan riwayat peminjaman buku Anda, dari yang terbaru.</p>{% endif %}
+</div>
 <div class="card">
   <div class="table-scroll">
   <table>
     <thead>
-      <tr><th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Denda</th></tr>
+      <tr>
+        <th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th>
+        {% if bisa_batalkan %}<th>Aksi</th>{% endif %}
+      </tr>
     </thead>
     <tbody>
       {% for p in daftar %}
@@ -18,16 +24,33 @@
         <td>
           {% if p.status == 'dikembalikan' %}
             <span class="badge badge-success">Dikembalikan</span>
+          {% elif p.status == 'diajukan' %}
+            <span class="badge badge-warning">Menunggu Persetujuan</span>
+          {% elif p.status == 'ditolak' %}
+            <span class="badge badge-danger" title="{{ p.catatan or '' }}">Ditolak{{ ' — ' ~ p.catatan if p.catatan }}</span>
           {% elif p.is_telat %}
             <span class="badge badge-danger">Terlambat</span>
+          {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
+            <span class="badge badge-warning">⏰ Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
           {% else %}
             <span class="badge badge-info">Dipinjam</span>
           {% endif %}
         </td>
-        <td>{{ 'Rp' ~ '{:,}'.format(p.denda) if p.denda else '-' }}</td>
+        {% if bisa_batalkan %}
+        <td>
+          {% if p.status == 'diajukan' %}
+          <form method="POST" action="{{ url_for('peminjaman.batalkan_pengajuan', peminjaman_id=p.id) }}"
+                onsubmit="return confirm('Batalkan pengajuan peminjaman ini?');">
+            <button class="btn btn-sm btn-danger" type="submit">Batalkan</button>
+          </form>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        {% endif %}
       </tr>
       {% else %}
-      <tr><td colspan="6">Belum ada riwayat peminjaman.</td></tr>
+      <tr><td colspan="{{ 6 if bisa_batalkan else 5 }}">Belum ada riwayat peminjaman.</td></tr>
       {% endfor %}
     </tbody>
   </table>

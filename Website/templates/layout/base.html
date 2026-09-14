@@ -19,87 +19,146 @@
   </script>
   {% block extra_head %}{% endblock %}
 </head>
-<body>
-  <nav class="navbar">
-    <div class="navbar-left">
-      <button class="hamburger" id="btnHamburger" aria-label="Buka menu" onclick="toggleMenuMobile()">☰</button>
-      <a href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}" class="brand">
+{% set pakai_sidebar = current_user.is_authenticated and current_user.is_operator %}
+<body class="{{ 'has-sidebar' if pakai_sidebar else '' }}">
+
+  {% if pakai_sidebar %}
+    {# ================= SIDEBAR - khusus akun OPERATOR ================= #}
+    <aside class="sidebar" id="sidebarOperator">
+      <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand">
         <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo STIKOM Kendari">
-        <span>Perpustakaan STIKOM Kendari</span>
+        <span>Perpustakaan<br>STIKOM Kendari</span>
       </a>
-    </div>
+      <nav class="sidebar-nav">
+        <a class="side-link" href="{{ url_for('dashboard.index') }}">
+          <span class="side-link-main"><span class="nav-icon">🏠</span>Dashboard</span>
+        </a>
 
-    <div class="navbar-links" id="navLinks">
-      {% if current_user.is_authenticated %}
-        <a class="nav-link" href="{{ url_for('dashboard.index') }}"><span class="nav-icon">🏠</span>Dashboard</a>
-
-        {% if current_user.is_anggota %}
-          <a class="nav-link" href="{{ url_for('buku.daftar_buku') }}"><span class="nav-icon">📚</span>Koleksi Buku</a>
-          <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><span class="nav-icon">🪪</span>Kartu Anggota</a>
-          <a class="nav-link" href="{{ url_for('peminjaman.riwayat_saya') }}"><span class="nav-icon">🕘</span>Riwayat Saya</a>
-        {% endif %}
-
-        {% if current_user.is_staf or current_user.is_operator %}
-          <div class="nav-dropdown">
-            <button type="button" class="nav-link nav-dropdown-toggle">
-              <span class="nav-icon">📚</span>Koleksi Buku <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-              <a href="{{ url_for('buku.daftar_buku') }}">🔖 Daftar Buku</a>
-              <a href="{{ url_for('buku.kategori') }}">🗂️ Kategori</a>
-              <a href="{{ url_for('buku.import_excel') }}">📥 Import Excel</a>
-            </div>
+        <div class="sidebar-nav-label">Koleksi</div>
+        <div class="side-group">
+          <button type="button" class="side-link side-group-toggle">
+            <span class="side-link-main"><span class="nav-icon">📚</span>Koleksi Buku</span>
+            <span class="side-caret">▾</span>
+          </button>
+          <div class="side-submenu">
+            <a href="{{ url_for('buku.daftar_buku') }}">🔖 Daftar Buku</a>
+            <a href="{{ url_for('buku.kategori') }}">🗂️ Kategori</a>
+            <a href="{{ url_for('buku.import_excel') }}">📥 Import Excel</a>
           </div>
-          <a class="nav-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}"><span class="nav-icon">📖</span>Peminjaman</a>
-          <div class="nav-dropdown">
-            <button type="button" class="nav-link nav-dropdown-toggle">
-              <span class="nav-icon">📊</span>Laporan <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-              <a href="{{ url_for('laporan.buku_populer') }}">🔥 Buku Populer</a>
-              <a href="{{ url_for('laporan.buku_tidak_populer') }}">💤 Buku Tidak Populer</a>
-            </div>
+        </div>
+
+        <div class="sidebar-nav-label">Sirkulasi</div>
+        <a class="side-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}">
+          <span class="side-link-main"><span class="nav-icon">📖</span>Peminjaman</span>
+        </a>
+        <a class="side-link" href="{{ url_for('peminjaman.daftar_pengajuan') }}">
+          <span class="side-link-main"><span class="nav-icon">📝</span>Pengajuan</span>
+          {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
+        </a>
+        <div class="side-group">
+          <button type="button" class="side-link side-group-toggle">
+            <span class="side-link-main"><span class="nav-icon">📊</span>Laporan</span>
+            <span class="side-caret">▾</span>
+          </button>
+          <div class="side-submenu">
+            <a href="{{ url_for('laporan.buku_populer') }}">🔥 Buku Populer</a>
+            <a href="{{ url_for('laporan.buku_tidak_populer') }}">💤 Buku Tidak Populer</a>
           </div>
-        {% endif %}
+        </div>
 
-        {% if current_user.is_operator %}
-          <a class="nav-link" href="{{ url_for('auth.daftar_pengguna') }}"><span class="nav-icon">👤</span>Pengguna</a>
-          <a class="nav-link" href="{{ url_for('auth.daftar_persetujuan') }}">
-            <span class="nav-icon">✅</span>Persetujuan
-            {% if jumlah_pending_akun %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pending_akun }}</span>{% endif %}
-          </a>
+        <div class="sidebar-nav-label">Administrasi</div>
+        <a class="side-link" href="{{ url_for('auth.daftar_pengguna') }}">
+          <span class="side-link-main"><span class="nav-icon">👤</span>Pengguna</span>
+        </a>
+        <a class="side-link" href="{{ url_for('auth.daftar_persetujuan') }}">
+          <span class="side-link-main"><span class="nav-icon">✅</span>Persetujuan</span>
+          {% if jumlah_pending_akun %}<span class="badge badge-danger">{{ jumlah_pending_akun }}</span>{% endif %}
+        </a>
+      </nav>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenuMobile()"></div>
+  {% endif %}
+
+  <div class="app-main">
+    <nav class="navbar {{ 'navbar-compact' if pakai_sidebar else '' }}">
+      <div class="navbar-left">
+        <button class="hamburger" id="btnHamburger" aria-label="Buka menu" onclick="toggleMenuMobile()">☰</button>
+        <a href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}" class="brand">
+          <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo STIKOM Kendari">
+          <span>Perpustakaan STIKOM Kendari</span>
+        </a>
+      </div>
+
+      {% if not pakai_sidebar %}
+      <div class="navbar-links" id="navLinks">
+        {% if current_user.is_authenticated %}
+          <a class="nav-link" href="{{ url_for('dashboard.index') }}"><span class="nav-icon">🏠</span>Dashboard</a>
+
+          {% if current_user.is_anggota %}
+            <a class="nav-link" href="{{ url_for('buku.daftar_buku') }}"><span class="nav-icon">📚</span>Koleksi Buku</a>
+            <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><span class="nav-icon">🪪</span>Kartu Anggota</a>
+            <a class="nav-link" href="{{ url_for('peminjaman.riwayat_saya') }}"><span class="nav-icon">🕘</span>Riwayat Saya</a>
+          {% endif %}
+
+          {% if current_user.is_staf %}
+            <div class="nav-dropdown">
+              <button type="button" class="nav-link nav-dropdown-toggle">
+                <span class="nav-icon">📚</span>Koleksi Buku <span class="nav-caret">▾</span>
+              </button>
+              <div class="nav-dropdown-menu">
+                <a href="{{ url_for('buku.daftar_buku') }}">🔖 Daftar Buku</a>
+                <a href="{{ url_for('buku.kategori') }}">🗂️ Kategori</a>
+                <a href="{{ url_for('buku.import_excel') }}">📥 Import Excel</a>
+              </div>
+            </div>
+            <a class="nav-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}"><span class="nav-icon">📖</span>Peminjaman</a>
+            <a class="nav-link" href="{{ url_for('peminjaman.daftar_pengajuan') }}">
+              <span class="nav-icon">📝</span>Pengajuan
+              {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
+            </a>
+            <div class="nav-dropdown">
+              <button type="button" class="nav-link nav-dropdown-toggle">
+                <span class="nav-icon">📊</span>Laporan <span class="nav-caret">▾</span>
+              </button>
+              <div class="nav-dropdown-menu">
+                <a href="{{ url_for('laporan.buku_populer') }}">🔥 Buku Populer</a>
+                <a href="{{ url_for('laporan.buku_tidak_populer') }}">💤 Buku Tidak Populer</a>
+              </div>
+            </div>
+          {% endif %}
         {% endif %}
+      </div>
       {% endif %}
+
+      <div class="navbar-right">
+        {% if current_user.is_authenticated %}
+          <span class="user-chip">{{ current_user.nama_lengkap }} · {{ current_user.role }}</span>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-accent">Logout</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-accent">Login</a>
+          <a href="{{ url_for('auth.register') }}" style="color:#f4e9d8; font-size:0.85rem;">Daftar</a>
+        {% endif %}
+        <button class="theme-toggle" id="btnTema" onclick="toggleTema()" aria-label="Ganti mode gelap/terang" title="Ganti mode gelap/terang">
+          <span id="iconTema">🌙</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
     </div>
 
-    <div class="navbar-right">
-      {% if current_user.is_authenticated %}
-        <span class="user-chip">{{ current_user.nama_lengkap }} · {{ current_user.role }}</span>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-accent">Logout</a>
-      {% else %}
-        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-accent">Login</a>
-        <a href="{{ url_for('auth.register') }}" style="color:#f4e9d8; font-size:0.85rem;">Daftar</a>
-      {% endif %}
-      <button class="theme-toggle" id="btnTema" onclick="toggleTema()" aria-label="Ganti mode gelap/terang" title="Ganti mode gelap/terang">
-        <span id="iconTema">🌙</span>
-      </button>
+    <div class="footer">
+      &copy; {{ 2026 }} Perpustakaan STIKOM Kendari — dijalankan secara lokal.
     </div>
-  </nav>
-
-  <div class="container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    {% block content %}{% endblock %}
-  </div>
-
-  <div class="footer">
-    &copy; {{ 2026 }} Perpustakaan STIKOM Kendari — dijalankan secara lokal.
   </div>
 
   <script>
@@ -117,15 +176,25 @@
       if (icon) icon.textContent = tema === 'dark' ? '☀️' : '🌙';
     }
 
+    // ---- Menu mobile: buka/tutup sidebar (operator) ATAU navLinks (role lain) ----
     function toggleMenuMobile() {
-      document.getElementById('navLinks').classList.toggle('open');
+      var sidebar = document.getElementById('sidebarOperator');
+      if (sidebar) {
+        sidebar.classList.toggle('open');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (overlay) overlay.classList.toggle('open');
+      } else {
+        var navLinks = document.getElementById('navLinks');
+        if (navLinks) navLinks.classList.toggle('open');
+      }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
       perbaruiIkonTema();
 
-      // tandai link menu yang sedang aktif (termasuk yang ada di dalam dropdown)
       var path = window.location.pathname;
+
+      // tandai link menu yang sedang aktif di navbar atas (termasuk dropdown)
       document.querySelectorAll('.navbar-links a').forEach(function (a) {
         if (a.getAttribute('href') === path) {
           a.classList.add('active');
@@ -136,15 +205,34 @@
         }
       });
 
+      // tandai link menu yang sedang aktif di sidebar (operator), termasuk submenu
+      document.querySelectorAll('.sidebar-nav a').forEach(function (a) {
+        if (a.getAttribute('href') === path) {
+          a.classList.add('active');
+          var groupParent = a.closest('.side-group');
+          if (groupParent) {
+            groupParent.classList.add('open');
+            groupParent.querySelector('.side-group-toggle').classList.add('active');
+          }
+        }
+      });
+
       // tutup menu mobile otomatis saat memilih salah satu link
-      document.querySelectorAll('.navbar-links a').forEach(function (a) {
+      document.querySelectorAll('.navbar-links a, .sidebar-nav a').forEach(function (a) {
         a.addEventListener('click', function () {
-          document.getElementById('navLinks').classList.remove('open');
+          var navLinks = document.getElementById('navLinks');
+          if (navLinks) navLinks.classList.remove('open');
+          var sidebar = document.getElementById('sidebarOperator');
+          if (sidebar && window.innerWidth <= 900) {
+            sidebar.classList.remove('open');
+            var overlay = document.getElementById('sidebarOverlay');
+            if (overlay) overlay.classList.remove('open');
+          }
           document.querySelectorAll('.nav-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
         });
       });
 
-      // buka/tutup dropdown navbar (klik, agar konsisten di desktop & mobile/sentuh)
+      // buka/tutup dropdown navbar atas (Koleksi Buku / Laporan, untuk staf)
       document.querySelectorAll('.nav-dropdown-toggle').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
           e.stopPropagation();
@@ -154,12 +242,17 @@
           if (!sudahTerbuka) dropdown.classList.add('open');
         });
       });
-
-      // klik di luar dropdown akan menutupnya
       document.addEventListener('click', function (e) {
         if (!e.target.closest('.nav-dropdown')) {
           document.querySelectorAll('.nav-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
         }
+      });
+
+      // buka/tutup submenu sidebar (Koleksi Buku / Laporan, untuk operator)
+      document.querySelectorAll('.side-group-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          btn.closest('.side-group').classList.toggle('open');
+        });
       });
 
       // notifikasi flash otomatis hilang setelah beberapa detik
