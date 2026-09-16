@@ -2,24 +2,31 @@
 {% block title %}Daftar Peminjaman{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h2>📖 Daftar Peminjaman</h2>
+  <h2><svg class="icon"><use href="#i-book-open"></use></svg> Daftar Peminjaman</h2>
   <p class="page-sub">Kelola peminjaman aktif dan riwayat pengembalian buku.</p>
 </div>
 
 <div class="search-bar">
   <a href="{{ url_for('peminjaman.daftar_pengajuan') }}" class="btn btn-sm btn-accent">
-    📝 Pengajuan Peminjaman
+    <svg class="icon"><use href="#i-clipboard"></use></svg> Pengajuan Peminjaman
     {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
   </a>
-  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='dipinjam') }}"
+  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='dipinjam', q=q) }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='dipinjam' }}">Sedang Dipinjam</a>
-  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='dikembalikan') }}"
+  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='dikembalikan', q=q) }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='dikembalikan' }}">Sudah Dikembalikan</a>
-  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='ditolak') }}"
+  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='ditolak', q=q) }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='ditolak' }}">Ditolak</a>
-  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='semua') }}"
+  <a href="{{ url_for('peminjaman.daftar_peminjaman', status='semua', q=q) }}"
      class="btn btn-sm {{ 'btn-warning' if status_filter=='semua' }}">Semua</a>
 </div>
+
+<form method="GET" class="search-bar">
+  <input type="hidden" name="status" value="{{ status_filter }}">
+  <input type="text" name="q" placeholder="Cari nama/username anggota atau judul buku..." value="{{ q }}">
+  <button class="btn" type="submit">Cari</button>
+  {% if q %}<a href="{{ url_for('peminjaman.daftar_peminjaman', status=status_filter) }}" class="btn btn-sm" style="background:#888;">Reset</a>{% endif %}
+</form>
 
 <div class="card">
   <div class="table-scroll">

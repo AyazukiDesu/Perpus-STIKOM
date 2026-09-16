@@ -5,7 +5,7 @@
 <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
   <a href="{{ url_for('auth.tambah_pengguna') }}" class="btn">+ Tambah Staf/Operator</a>
   <a href="{{ url_for('auth.daftar_persetujuan') }}" class="btn btn-accent">
-    ✅ Persetujuan Akun Baru
+    <svg class="icon"><use href="#i-user-check"></use></svg> Persetujuan Akun Baru
     {% if jumlah_pending_akun %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pending_akun }}</span>{% endif %}
   </a>
 </div>
@@ -33,13 +33,26 @@
           {% else %}<span class="badge badge-danger">Nonaktif</span>{% endif %}
         </td>
         <td>
-          {% if u.id != current_user.id %}
-          <form method="POST" action="{{ url_for('auth.toggle_aktif_pengguna', user_id=u.id) }}" style="display:inline;">
-            <button class="btn btn-sm btn-warning" type="submit">
-              {{ 'Nonaktifkan' if u.is_active_db else 'Aktifkan' }}
-            </button>
-          </form>
-          {% endif %}
+          <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+            {% if u.id != current_user.id %}
+              <a href="{{ url_for('auth.edit_pengguna', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-edit"></use></svg> Edit</a>
+              {% if u.role == 'user' %}
+                <a href="{{ url_for('kartu.kartu_anggota_lain', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-id-card"></use></svg> Kartu</a>
+                <a href="{{ url_for('peminjaman.riwayat_anggota', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-clock"></use></svg> Riwayat</a>
+              {% endif %}
+              <form method="POST" action="{{ url_for('auth.toggle_aktif_pengguna', user_id=u.id) }}" style="display:inline;">
+                <button class="btn btn-sm btn-warning" type="submit">
+                  {{ 'Nonaktifkan' if u.is_active_db else 'Aktifkan' }}
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('auth.hapus_pengguna', user_id=u.id) }}" style="display:inline;"
+                    onsubmit="return confirm('Hapus akun &quot;' + {{ u.username|tojson }} + '&quot; secara permanen? Seluruh riwayat peminjaman miliknya juga akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.');">
+                <button class="btn btn-sm btn-danger" type="submit"><svg class="icon"><use href="#i-trash"></use></svg> Hapus</button>
+              </form>
+            {% else %}
+              <span class="page-sub" style="font-size:0.78rem;">Akun Anda sendiri — edit lewat Profil Saya</span>
+            {% endif %}
+          </div>
         </td>
       </tr>
       {% endfor %}

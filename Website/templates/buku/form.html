@@ -61,7 +61,7 @@
                {% if buku and buku.sampul_path %}style="display:none;"{% endif %}>Belum ada sampul</div>
         </div>
         <div class="sampul-uploader-actions">
-          <label for="inputSampul" class="btn btn-sm btn-accent">🖼️ Pilih &amp; Crop Sampul</label>
+          <label for="inputSampul" class="btn btn-sm btn-accent"><svg class="icon"><use href="#i-image"></use></svg> Pilih &amp; Crop Sampul</label>
           <input type="file" name="sampul" id="inputSampul" accept="image/*" hidden>
           <p class="sampul-hint">Foto akan dipotong otomatis mengikuti rasio sampul buku sebelum diunggah.</p>
         </div>
@@ -77,14 +77,14 @@
 <div class="crop-modal" id="cropModal">
   <div class="crop-modal-backdrop"></div>
   <div class="crop-modal-box">
-    <h3>✂️ Sesuaikan Sampul Buku</h3>
+    <h3><svg class="icon"><use href="#i-crop"></use></svg> Sesuaikan Sampul Buku</h3>
     <div class="crop-modal-image-wrap">
       <img id="cropTargetImage" src="" alt="Gambar untuk dipotong">
     </div>
     <p class="crop-modal-hint">Geser &amp; perbesar/kecilkan area kotak untuk memilih bagian sampul.</p>
     <div class="crop-modal-actions">
       <button type="button" class="btn btn-sm btn-muted" id="btnBatalCrop">Batal</button>
-      <button type="button" class="btn btn-sm" id="btnCropTerapkan">✅ Gunakan Potongan Ini</button>
+      <button type="button" class="btn btn-sm" id="btnCropTerapkan"><svg class="icon"><use href="#i-check"></use></svg> Gunakan Potongan Ini</button>
     </div>
   </div>
 </div>

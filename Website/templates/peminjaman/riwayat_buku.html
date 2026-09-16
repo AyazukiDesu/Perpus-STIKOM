@@ -2,6 +2,13 @@
 {% block title %}Riwayat Peminjaman Buku{% endblock %}
 {% block content %}
 <h2>Riwayat Peminjaman - {{ buku.judul }}</h2>
+
+<form method="GET" class="search-bar">
+  <input type="text" name="q" placeholder="Cari nama/username anggota..." value="{{ q }}">
+  <button class="btn" type="submit">Cari</button>
+  {% if q %}<a href="{{ url_for(request.endpoint, **request.view_args) }}" class="btn btn-sm" style="background:#888;">Reset</a>{% endif %}
+</form>
+
 <div class="card">
   <div class="table-scroll">
   <table>

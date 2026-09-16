@@ -1,8 +1,13 @@
 {% extends "layout/base.html" %}
-{% block title %}Kartu Anggota{% endblock %}
+{% block title %}Kartu Perpustakaan{% endblock %}
 {% block content %}
-<h2>Kartu Anggota Digital</h2>
-<div class="kartu-anggota">
+<div class="page-head">
+  <h2><svg class="icon"><use href="#i-id-card"></use></svg> Kartu Perpustakaan Digital</h2>
+  {% if anggota.id != current_user.id %}<p class="page-sub">Milik: {{ anggota.nama_lengkap }} ({{ anggota.role }})</p>{% endif %}
+</div>
+
+<div class="kartu-anggota {{ 'kartu-role-staf' if anggota.role == 'staf' else ('kartu-role-operator' if anggota.role == 'operator' else '') }}">
+  <span class="role-pita">{{ 'Anggota' if anggota.role == 'user' else anggota.role }}</span>
   <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" class="logo-kecil">
   <div class="label">Kartu Perpustakaan STIKOM Kendari</div>
   <div class="nomor">{{ kartu.nomor_kartu }}</div>
@@ -18,5 +23,13 @@
       <span class="badge badge-danger">Nonaktif</span>
     {% endif %}
   </div>
+</div>
+
+<div class="kartu-wrap-actions">
+  {% if anggota.id == current_user.id %}
+    <a href="{{ url_for('kartu.kartu_saya_cetak') }}" target="_blank" class="btn btn-accent"><svg class="icon"><use href="#i-download"></use></svg> Download Kartu (PDF)</a>
+  {% else %}
+    <a href="{{ url_for('kartu.kartu_anggota_lain_cetak', user_id=anggota.id) }}" target="_blank" class="btn btn-accent"><svg class="icon"><use href="#i-download"></use></svg> Download Kartu (PDF)</a>
+  {% endif %}
 </div>
 {% endblock %}

@@ -1,4 +1,5 @@
 import os
+from datetime import date
 from flask import Flask
 from config import Config
 from extensions import db, login_manager
@@ -49,6 +50,12 @@ def create_app():
         else:
             jumlah = 0
         return {"jumlah_pengajuan_peminjaman": jumlah}
+
+    @app.context_processor
+    def inject_tahun_sekarang():
+        # Dipakai footer untuk tahun copyright, dihitung otomatis
+        # (sebelumnya ditulis angka tetap "2026" di template).
+        return {"tahun_sekarang": date.today().year}
 
     # ---- registrasi blueprint ----
     from routes.auth import auth_bp

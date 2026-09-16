@@ -2,7 +2,7 @@
 {% block title %}Kategori Buku{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h2>🗂️ Kategori Buku</h2>
+  <h2><svg class="icon"><use href="#i-folder"></use></svg> Kategori Buku</h2>
   <p class="page-sub">Kelola rak kategori supaya koleksi buku mudah ditemukan.</p>
 </div>
 
@@ -17,7 +17,7 @@
 <div class="kategori-grid">
   {% for k in kategori_list %}
     <a href="{{ url_for('buku.daftar_buku', kategori_id=k.id) }}" class="kategori-card">
-      <div class="kategori-icon">📚</div>
+      <svg class="icon kategori-icon"><use href="#i-book"></use></svg>
       <div class="kategori-nama">{{ k.nama_kategori }}</div>
       <div class="kategori-jumlah">{{ k.buku_list|length }} buku</div>
     </a>
@@ -25,7 +25,7 @@
 </div>
 {% else %}
   <div class="card empty-state">
-    <div class="empty-icon">🗂️</div>
+    <svg class="icon" style="width:2.2rem;height:2.2rem;"><use href="#i-folder"></use></svg>
     <p>Belum ada kategori. Tambahkan kategori pertama Anda di atas.</p>
   </div>
 {% endif %}

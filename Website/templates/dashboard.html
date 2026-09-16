@@ -8,18 +8,18 @@
 {% endblock %}
 
 {% block content %}
-<h2>Halo, {{ current_user.nama_lengkap }} 👋</h2>
+<h2>Halo, {{ current_user.nama_lengkap }}</h2>
 <p style="color:var(--muted);">Hari ini: {{ today.strftime('%d-%m-%Y') }}</p>
 
 {% if current_user.is_anggota %}
   {% if jumlah_terlambat_saya %}
     <div class="flash flash-danger" style="position:static;">
-      ⚠️ Anda memiliki {{ jumlah_terlambat_saya }} buku yang sudah <strong>lewat batas waktu</strong> pengembalian. Segera kembalikan ke perpustakaan.
+      Anda memiliki {{ jumlah_terlambat_saya }} buku yang sudah <strong>lewat batas waktu</strong> pengembalian. Segera kembalikan ke perpustakaan.
     </div>
   {% endif %}
   {% if akan_jatuh_tempo_saya %}
     <div class="flash flash-warning" style="position:static;">
-      ⏰ Anda memiliki {{ akan_jatuh_tempo_saya|length }} buku yang akan <strong>segera jatuh tempo</strong> dalam {{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan. Yuk kembalikan tepat waktu ya!
+      Anda memiliki {{ akan_jatuh_tempo_saya|length }} buku yang akan <strong>segera jatuh tempo</strong> dalam {{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan. Yuk kembalikan tepat waktu ya!
     </div>
   {% endif %}
 
@@ -38,7 +38,7 @@
     </div>
   </div>
 
-  <h3>Buku yang sedang Anda pinjam</h3>
+  <h3><svg class="icon"><use href="#i-book-open"></use></svg> Buku yang sedang Anda pinjam</h3>
   {% if pinjaman_aktif %}
     <div class="card">
       <div class="table-scroll">
@@ -54,7 +54,7 @@
               {% if p.is_telat %}
                 <span class="badge badge-danger">Terlambat</span>
               {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
-                <span class="badge badge-warning">⏰ Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
+                <span class="badge badge-warning">Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
               {% else %}
                 <span class="badge badge-success">Tepat waktu</span>
               {% endif %}
@@ -70,7 +70,7 @@
   {% endif %}
 
   <section class="dash-section">
-    <h3 class="dash-section-title">🔥 Rekomendasi Buku Populer</h3>
+    <h3 class="dash-section-title"><svg class="icon"><use href="#i-flame"></use></svg> Rekomendasi Buku Populer</h3>
     {% if rekomendasi_buku %}
       <div class="buku-grid">
         {% for b, jumlah in rekomendasi_buku %}
@@ -81,15 +81,15 @@
               {% else %}
                 <div class="buku-cover-placeholder">Tidak ada sampul</div>
               {% endif %}
-              <span class="buku-stok-badge">🔥 {{ jumlah }}x dipinjam</span>
+              <span class="buku-stok-badge">{{ jumlah }}x dipinjam</span>
             </a>
             <div class="buku-card-body">
               <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-judul">{{ b.judul }}</a>
-              <div class="buku-penulis">✍️ {{ b.penulis }}</div>
+              <div class="buku-penulis">{{ b.penulis }}</div>
               <div class="buku-card-actions">
                 <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=b.id) }}"
                       onsubmit="return confirm('Ajukan peminjaman buku ini?');">
-                  <button class="btn btn-sm btn-accent" type="submit">📝 Ajukan</button>
+                  <button class="btn btn-sm btn-accent" type="submit">Ajukan</button>
                 </form>
               </div>
             </div>
@@ -117,7 +117,7 @@
   </div>
 
   <section class="dash-section">
-    <h3 class="dash-section-title">🔔 Segera Jatuh Tempo <span class="dash-section-sub">({{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan)</span></h3>
+    <h3 class="dash-section-title"><svg class="icon"><use href="#i-bell"></use></svg> Segera Jatuh Tempo <span class="dash-section-sub">({{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan)</span></h3>
     {% if akan_jatuh_tempo %}
       <div class="card">
         <div class="table-scroll">
@@ -140,13 +140,13 @@
       </div>
     {% else %}
       <div class="card empty-state" style="padding:1rem;">
-        <p style="margin:0;">✅ Tidak ada peminjaman yang jatuh tempo dalam {{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan.</p>
+        <p style="margin:0;">Tidak ada peminjaman yang jatuh tempo dalam {{ config.PERINGATAN_JATUH_TEMPO_HARI }} hari ke depan.</p>
       </div>
     {% endif %}
   </section>
 
   <section class="dash-section">
-    <h3 class="dash-section-title">📊 Statistik &amp; Grafik</h3>
+    <h3 class="dash-section-title"><svg class="icon"><use href="#i-bar-chart"></use></svg> Statistik &amp; Grafik</h3>
     <div class="chart-grid">
       <div class="card chart-card">
         <div class="chart-card-title">Tren Peminjaman (6 Bulan Terakhir)</div>
@@ -164,7 +164,7 @@
   </section>
 
   <section class="dash-section">
-    <h3 class="dash-section-title">🕘 Aktivitas Peminjaman Terbaru</h3>
+    <h3 class="dash-section-title"><svg class="icon"><use href="#i-clock"></use></svg> Aktivitas Peminjaman Terbaru</h3>
     {% if peminjaman_terbaru %}
       <div class="card">
         <div class="table-scroll">
@@ -197,6 +197,27 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+  // Animasi hitung-naik utk angka statistik (mis. 128 dianimasikan dari 0 -> 128)
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.stat-box .angka').forEach(function (el) {
+      var teks = el.textContent.trim();
+      if (!/^\d+$/.test(teks)) return; // lewati yang bukan angka murni (mis. badge status)
+      var target = parseInt(teks, 10);
+      if (target === 0) return;
+      var durasi = 600, mulai = null;
+      function langkah(ts) {
+        if (!mulai) mulai = ts;
+        var progres = Math.min((ts - mulai) / durasi, 1);
+        var nilaiSekarang = Math.round(target * (1 - Math.pow(1 - progres, 3))); // ease-out
+        el.textContent = nilaiSekarang;
+        if (progres < 1) requestAnimationFrame(langkah);
+        else el.textContent = target;
+      }
+      requestAnimationFrame(langkah);
+    });
+  });
+</script>
 {% if not current_user.is_anggota %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {

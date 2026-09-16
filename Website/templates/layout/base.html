@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="theme-color" content="#4a1620">
+  <meta name="theme-color" content="#3c1512">
   <title>{% block title %}Perpustakaan{% endblock %} - STIKOM Kendari</title>
   <link rel="icon" href="{{ url_for('static', filename='img/logo_stikom.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <script>
     /* Terapkan tema tersimpan SEBELUM halaman dirender, agar tidak "berkedip" */
@@ -21,6 +21,14 @@
 </head>
 {% set pakai_sidebar = current_user.is_authenticated and current_user.is_operator %}
 <body class="{{ 'has-sidebar' if pakai_sidebar else '' }}">
+  {% set tampilkan_loader_awal = (request.endpoint in ['auth.register', 'auth.login']) %}
+  <div class="page-loader{{ '' if tampilkan_loader_awal else ' page-loader-hidden' }}" id="pageLoader">
+    <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Memuat" class="page-loader-logo">
+    <div class="page-loader-bar"></div>
+    <div class="page-loader-text">Memuat...</div>
+  </div>
+
+  {% include "layout/icons.html" %}
 
   {% if pakai_sidebar %}
     {# ================= SIDEBAR - khusus akun OPERATOR ================= #}
@@ -31,48 +39,56 @@
       </a>
       <nav class="sidebar-nav">
         <a class="side-link" href="{{ url_for('dashboard.index') }}">
-          <span class="side-link-main"><span class="nav-icon">🏠</span>Dashboard</span>
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-home"></use></svg>Dashboard</span>
         </a>
 
         <div class="sidebar-nav-label">Koleksi</div>
         <div class="side-group">
           <button type="button" class="side-link side-group-toggle">
-            <span class="side-link-main"><span class="nav-icon">📚</span>Koleksi Buku</span>
-            <span class="side-caret">▾</span>
+            <span class="side-link-main"><svg class="nav-icon"><use href="#i-book"></use></svg>Koleksi Buku</span>
+            <svg class="side-caret"><use href="#i-chevron-down"></use></svg>
           </button>
           <div class="side-submenu">
-            <a href="{{ url_for('buku.daftar_buku') }}">🔖 Daftar Buku</a>
-            <a href="{{ url_for('buku.kategori') }}">🗂️ Kategori</a>
-            <a href="{{ url_for('buku.import_excel') }}">📥 Import Excel</a>
+            <a href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg>Daftar Buku</a>
+            <a href="{{ url_for('buku.kategori') }}"><svg class="nav-icon"><use href="#i-folder"></use></svg>Kategori</a>
+            <a href="{{ url_for('buku.import_excel') }}"><svg class="nav-icon"><use href="#i-upload"></use></svg>Import Excel</a>
           </div>
         </div>
 
         <div class="sidebar-nav-label">Sirkulasi</div>
         <a class="side-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}">
-          <span class="side-link-main"><span class="nav-icon">📖</span>Peminjaman</span>
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-book-open"></use></svg>Peminjaman</span>
         </a>
         <a class="side-link" href="{{ url_for('peminjaman.daftar_pengajuan') }}">
-          <span class="side-link-main"><span class="nav-icon">📝</span>Pengajuan</span>
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-clipboard"></use></svg>Pengajuan</span>
           {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
         </a>
         <div class="side-group">
           <button type="button" class="side-link side-group-toggle">
-            <span class="side-link-main"><span class="nav-icon">📊</span>Laporan</span>
-            <span class="side-caret">▾</span>
+            <span class="side-link-main"><svg class="nav-icon"><use href="#i-bar-chart"></use></svg>Laporan</span>
+            <svg class="side-caret"><use href="#i-chevron-down"></use></svg>
           </button>
           <div class="side-submenu">
-            <a href="{{ url_for('laporan.buku_populer') }}">🔥 Buku Populer</a>
-            <a href="{{ url_for('laporan.buku_tidak_populer') }}">💤 Buku Tidak Populer</a>
+            <a href="{{ url_for('laporan.buku_populer') }}"><svg class="nav-icon"><use href="#i-flame"></use></svg>Buku Populer</a>
+            <a href="{{ url_for('laporan.buku_tidak_populer') }}"><svg class="nav-icon"><use href="#i-trend-down"></use></svg>Buku Tidak Populer</a>
           </div>
         </div>
 
         <div class="sidebar-nav-label">Administrasi</div>
         <a class="side-link" href="{{ url_for('auth.daftar_pengguna') }}">
-          <span class="side-link-main"><span class="nav-icon">👤</span>Pengguna</span>
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-users"></use></svg>Pengguna</span>
         </a>
         <a class="side-link" href="{{ url_for('auth.daftar_persetujuan') }}">
-          <span class="side-link-main"><span class="nav-icon">✅</span>Persetujuan</span>
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-user-check"></use></svg>Persetujuan</span>
           {% if jumlah_pending_akun %}<span class="badge badge-danger">{{ jumlah_pending_akun }}</span>{% endif %}
+        </a>
+
+        <div class="sidebar-nav-label">Akun Saya</div>
+        <a class="side-link" href="{{ url_for('kartu.kartu_saya') }}">
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kartu Saya</span>
+        </a>
+        <a class="side-link" href="{{ url_for('auth.profil') }}">
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-user"></use></svg>Profil Saya</span>
         </a>
       </nav>
     </aside>
@@ -82,7 +98,7 @@
   <div class="app-main">
     <nav class="navbar {{ 'navbar-compact' if pakai_sidebar else '' }}">
       <div class="navbar-left">
-        <button class="hamburger" id="btnHamburger" aria-label="Buka menu" onclick="toggleMenuMobile()">☰</button>
+        <button class="hamburger" id="btnHamburger" aria-label="Buka menu" onclick="toggleMenuMobile()"><svg class="nav-icon"><use href="#i-menu"></use></svg></button>
         <a href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}" class="brand">
           <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo STIKOM Kendari">
           <span>Perpustakaan STIKOM Kendari</span>
@@ -92,39 +108,41 @@
       {% if not pakai_sidebar %}
       <div class="navbar-links" id="navLinks">
         {% if current_user.is_authenticated %}
-          <a class="nav-link" href="{{ url_for('dashboard.index') }}"><span class="nav-icon">🏠</span>Dashboard</a>
+          <a class="nav-link" href="{{ url_for('dashboard.index') }}"><svg class="nav-icon"><use href="#i-home"></use></svg>Dashboard</a>
 
           {% if current_user.is_anggota %}
-            <a class="nav-link" href="{{ url_for('buku.daftar_buku') }}"><span class="nav-icon">📚</span>Koleksi Buku</a>
-            <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><span class="nav-icon">🪪</span>Kartu Anggota</a>
-            <a class="nav-link" href="{{ url_for('peminjaman.riwayat_saya') }}"><span class="nav-icon">🕘</span>Riwayat Saya</a>
+            <a class="nav-link" href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg>Koleksi Buku</a>
+            <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kartu Anggota</a>
+            <a class="nav-link" href="{{ url_for('peminjaman.riwayat_saya') }}"><svg class="nav-icon"><use href="#i-clock"></use></svg>Riwayat Saya</a>
           {% endif %}
 
           {% if current_user.is_staf %}
             <div class="nav-dropdown">
               <button type="button" class="nav-link nav-dropdown-toggle">
-                <span class="nav-icon">📚</span>Koleksi Buku <span class="nav-caret">▾</span>
+                <svg class="nav-icon"><use href="#i-book"></use></svg>Koleksi Buku <svg class="nav-caret"><use href="#i-chevron-down"></use></svg>
               </button>
               <div class="nav-dropdown-menu">
-                <a href="{{ url_for('buku.daftar_buku') }}">🔖 Daftar Buku</a>
-                <a href="{{ url_for('buku.kategori') }}">🗂️ Kategori</a>
-                <a href="{{ url_for('buku.import_excel') }}">📥 Import Excel</a>
+                <a href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg>Daftar Buku</a>
+                <a href="{{ url_for('buku.kategori') }}"><svg class="nav-icon"><use href="#i-folder"></use></svg>Kategori</a>
+                <a href="{{ url_for('buku.import_excel') }}"><svg class="nav-icon"><use href="#i-upload"></use></svg>Import Excel</a>
               </div>
             </div>
-            <a class="nav-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}"><span class="nav-icon">📖</span>Peminjaman</a>
+            <a class="nav-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}"><svg class="nav-icon"><use href="#i-book-open"></use></svg>Peminjaman</a>
             <a class="nav-link" href="{{ url_for('peminjaman.daftar_pengajuan') }}">
-              <span class="nav-icon">📝</span>Pengajuan
+              <svg class="nav-icon"><use href="#i-clipboard"></use></svg>Pengajuan
               {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
             </a>
             <div class="nav-dropdown">
               <button type="button" class="nav-link nav-dropdown-toggle">
-                <span class="nav-icon">📊</span>Laporan <span class="nav-caret">▾</span>
+                <svg class="nav-icon"><use href="#i-bar-chart"></use></svg>Laporan <svg class="nav-caret"><use href="#i-chevron-down"></use></svg>
               </button>
               <div class="nav-dropdown-menu">
-                <a href="{{ url_for('laporan.buku_populer') }}">🔥 Buku Populer</a>
-                <a href="{{ url_for('laporan.buku_tidak_populer') }}">💤 Buku Tidak Populer</a>
+                <a href="{{ url_for('laporan.buku_populer') }}"><svg class="nav-icon"><use href="#i-flame"></use></svg>Buku Populer</a>
+                <a href="{{ url_for('laporan.buku_tidak_populer') }}"><svg class="nav-icon"><use href="#i-trend-down"></use></svg>Buku Tidak Populer</a>
               </div>
             </div>
+            <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kartu Saya</a>
+            <a class="nav-link" href="{{ url_for('auth.profil') }}"><svg class="nav-icon"><use href="#i-user"></use></svg>Profil Saya</a>
           {% endif %}
         {% endif %}
       </div>
@@ -133,13 +151,14 @@
       <div class="navbar-right">
         {% if current_user.is_authenticated %}
           <span class="user-chip">{{ current_user.nama_lengkap }} · {{ current_user.role }}</span>
-          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-accent">Logout</a>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-accent"><svg class="nav-icon" style="margin-right:0.3rem;"><use href="#i-log-out"></use></svg>Logout</a>
         {% else %}
-          <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-accent">Login</a>
-          <a href="{{ url_for('auth.register') }}" style="color:#f4e9d8; font-size:0.85rem;">Daftar</a>
+          <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-accent js-nav-loader">Login</a>
+          <a href="{{ url_for('auth.register') }}" class="js-nav-loader" style="color:#f4e9d8; font-size:0.85rem;">Daftar</a>
         {% endif %}
         <button class="theme-toggle" id="btnTema" onclick="toggleTema()" aria-label="Ganti mode gelap/terang" title="Ganti mode gelap/terang">
-          <span id="iconTema">🌙</span>
+          <svg class="nav-icon" id="iconTemaGelap"><use href="#i-moon"></use></svg>
+          <svg class="nav-icon" id="iconTemaTerang" style="display:none;"><use href="#i-sun"></use></svg>
         </button>
       </div>
     </nav>
@@ -157,23 +176,59 @@
     </div>
 
     <div class="footer">
-      &copy; {{ 2026 }} Perpustakaan STIKOM Kendari — dijalankan secara lokal.
+      &copy; {{ tahun_sekarang }} Perpustakaan STIKOM Kendari — dijalankan secara lokal.
     </div>
   </div>
 
   <script>
+    /* ---------------- LOADER TRANSISI ANTAR HALAMAN ---------------- */
+    (function () {
+      var loader = document.getElementById('pageLoader');
+      if (!loader) return;
+
+      function sembunyikanLoader() { loader.classList.add('page-loader-hidden'); }
+      function tampilkanLoader() { loader.classList.remove('page-loader-hidden'); }
+
+      // Sembunyikan loader begitu halaman ini selesai dimuat (termasuk saat
+      // dibuka dari cache back/forward browser, via event 'pageshow').
+      window.addEventListener('load', sembunyikanLoader);
+      window.addEventListener('pageshow', sembunyikanLoader);
+      if (document.readyState === 'complete') sembunyikanLoader();
+
+      // Tampilkan loader HANYA saat menuju halaman registrasi (bukan di
+      // setiap perpindahan halaman) - link ditandai class "js-nav-loader".
+      document.querySelectorAll('a.js-nav-loader').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          if (e.defaultPrevented || e.button !== 0) return;
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          if (a.target && a.target !== '' && a.target !== '_self') return;
+          tampilkanLoader();
+        });
+      });
+    })();
+
     function toggleTema() {
       var root = document.documentElement;
       var temaSekarang = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', temaSekarang);
       localStorage.setItem('tema', temaSekarang);
       perbaruiIkonTema();
+
+      var tombolTema = document.getElementById('btnTema');
+      if (tombolTema) {
+        tombolTema.classList.remove('spin-once');
+        void tombolTema.offsetWidth; // reset agar animasi bisa diputar ulang
+        tombolTema.classList.add('spin-once');
+      }
     }
 
     function perbaruiIkonTema() {
       var tema = document.documentElement.getAttribute('data-theme');
-      var icon = document.getElementById('iconTema');
-      if (icon) icon.textContent = tema === 'dark' ? '☀️' : '🌙';
+      var iconGelap = document.getElementById('iconTemaGelap');
+      var iconTerang = document.getElementById('iconTemaTerang');
+      if (!iconGelap || !iconTerang) return;
+      iconGelap.style.display = tema === 'dark' ? 'none' : '';
+      iconTerang.style.display = tema === 'dark' ? '' : 'none';
     }
 
     // ---- Menu mobile: buka/tutup sidebar (operator) ATAU navLinks (role lain) ----
@@ -262,22 +317,6 @@
           el.style.opacity = '0';
           setTimeout(function () { el.remove(); }, 400);
         }, 4000);
-      });
-
-      // animasi hitung naik untuk angka di kotak statistik dashboard
-      document.querySelectorAll('.stat-box .angka').forEach(function (el) {
-        var target = parseInt(el.textContent.replace(/\D/g, ''), 10);
-        if (isNaN(target)) return;
-        var mulaiWaktu = null;
-        var durasi = 700;
-        function langkah(waktu) {
-          if (!mulaiWaktu) mulaiWaktu = waktu;
-          var progres = Math.min((waktu - mulaiWaktu) / durasi, 1);
-          el.textContent = Math.floor(progres * target);
-          if (progres < 1) requestAnimationFrame(langkah);
-          else el.textContent = target;
-        }
-        requestAnimationFrame(langkah);
       });
     });
   </script>

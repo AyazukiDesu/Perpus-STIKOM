@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kartu Perpustakaan - {{ anggota.nama_lengkap }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="cetak-page">
+    <div class="kartu-anggota {{ 'kartu-role-staf' if anggota.role == 'staf' else ('kartu-role-operator' if anggota.role == 'operator' else '') }}">
+      <span class="role-pita">{{ 'Anggota' if anggota.role == 'user' else anggota.role }}</span>
+      <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" class="logo-kecil">
+      <div class="label">Kartu Perpustakaan STIKOM Kendari</div>
+      <div class="nomor">{{ kartu.nomor_kartu }}</div>
+      <div style="font-size:1.05rem; margin-bottom:0.5rem;">{{ anggota.nama_lengkap }}</div>
+      <div style="font-size:0.8rem; opacity:0.85;">
+        Terbit: {{ kartu.tanggal_terbit.strftime('%d-%m-%Y') }} &nbsp;|&nbsp;
+        Berlaku s.d.: {{ kartu.tanggal_kadaluarsa.strftime('%d-%m-%Y') }}
+      </div>
+      <div style="margin-top:0.6rem;">
+        {% if kartu.status == 'aktif' %}
+          <span class="badge badge-success">Aktif</span>
+        {% else %}
+          <span class="badge badge-danger">Nonaktif</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cetak-no-print" style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center;">
+      <button class="btn btn-accent" onclick="window.print()"><svg class="icon"><use href="#i-printer"></use></svg> Cetak / Simpan sebagai PDF</button>
+      <button class="btn" style="background:#888;" onclick="window.close()">Tutup Tab Ini</button>
+    </div>
+    <p class="cetak-hint cetak-no-print">
+      Pada dialog cetak yang muncul, pilih tujuan <strong>"Simpan sebagai PDF"</strong> untuk mengunduh kartu ini sebagai file PDF.
+    </p>
+  </div>
+
+  <script>
+    // otomatis buka dialog cetak begitu halaman siap, memudahkan alur "download"
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.print(); }, 300);
+    });
+  </script>
+</body>
+</html>

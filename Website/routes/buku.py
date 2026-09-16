@@ -177,6 +177,24 @@ def edit_buku(buku_id):
 @role_required("operator")
 def hapus_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
+
+    # BUG LAMA: buku bisa langsung dihapus meski masih ada pengajuan/peminjaman
+    # aktif atasnya. Karena relasi peminjaman_list pakai cascade
+    # "all, delete-orphan", ini diam-diam menghapus seluruh riwayat
+    # peminjaman buku tsb (termasuk yang sedang dipinjam), sama seperti
+    # pengecekan yang sudah ada di hapus_pengguna().
+    ada_aktif = Peminjaman.query.filter(
+        Peminjaman.buku_id == buku.id,
+        Peminjaman.status.in_(["diajukan", "dipinjam"]),
+    ).first()
+    if ada_aktif:
+        flash(
+            f"Tidak bisa menghapus '{buku.judul}': masih ada pengajuan/peminjaman aktif atas buku ini. "
+            "Selesaikan (kembalikan/tolak) dulu.",
+            "warning",
+        )
+        return redirect(url_for("buku.daftar_buku"))
+
     judul = buku.judul
     db.session.delete(buku)
     db.session.commit()

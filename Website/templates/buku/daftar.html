@@ -2,14 +2,14 @@
 {% block title %}Daftar Buku{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h2>📚 Koleksi Buku</h2>
+  <h2><svg class="icon"><use href="#i-book"></use></svg> Koleksi Buku</h2>
   <p class="page-sub" id="labelModeTampilan">Jelajahi koleksi berdasarkan rak kategori, seperti di perpustakaan sungguhan.</p>
 </div>
 
 <form method="GET" class="search-bar">
   <input type="text" name="q" placeholder="Cari judul, penulis, atau ISBN..." value="{{ q }}">
   {% if kategori_id %}<input type="hidden" name="kategori_id" value="{{ kategori_id }}">{% endif %}
-  <button class="btn" type="submit">🔍 Cari</button>
+  <button class="btn" type="submit">Cari</button>
   {% if current_user.is_staf or current_user.is_operator %}
     <a href="{{ url_for('buku.tambah_buku') }}" class="btn btn-accent">+ Tambah Buku</a>
   {% endif %}
@@ -17,8 +17,8 @@
 
 {% if current_user.is_staf or current_user.is_operator %}
   <div class="mode-tampilan-switch" role="group" aria-label="Ganti mode tampilan">
-    <button type="button" id="btnModeRak" class="mode-btn" onclick="setModeTampilan('rak')">🗂️ Mode Rak</button>
-    <button type="button" id="btnModeProfesional" class="mode-btn" onclick="setModeTampilan('profesional')">📊 Mode Profesional</button>
+    <button type="button" id="btnModeRak" class="mode-btn" onclick="setModeTampilan('rak')"><svg class="icon"><use href="#i-folder"></use></svg> Mode Rak</button>
+    <button type="button" id="btnModeProfesional" class="mode-btn" onclick="setModeTampilan('profesional')"><svg class="icon"><use href="#i-bar-chart"></use></svg> Mode Profesional</button>
   </div>
 {% endif %}
 
@@ -34,14 +34,14 @@
 
 {% if not daftar %}
   <div class="card empty-state">
-    <div class="empty-icon">📭</div>
+    <svg class="icon" style="width:2.2rem;height:2.2rem;"><use href="#i-inbox"></use></svg>
     <p>Tidak ada buku ditemukan. Coba kata kunci atau kategori lain.</p>
   </div>
 {% else %}
   {% for nama_kategori, buku_list in kelompok.items() %}
     <section class="rak-section">
       <div class="rak-header">
-        <h3><span class="rak-icon">🗂️</span>{{ nama_kategori }}</h3>
+        <h3><svg class="icon rak-icon"><use href="#i-folder"></use></svg>{{ nama_kategori }}</h3>
         <span class="rak-count">{{ buku_list|length }} judul</span>
       </div>
       <div class="buku-grid">
@@ -54,12 +54,12 @@
                 <div class="buku-cover-placeholder">Tidak ada sampul</div>
               {% endif %}
               <span class="buku-stok-badge {{ 'stok-habis' if b.stok == 0 else '' }}">
-                {{ '📕 Kosong' if b.stok == 0 else '📗 ' ~ b.stok ~ ' stok' }}
+                {{ 'Kosong' if b.stok == 0 else b.stok ~ ' stok' }}
               </span>
             </a>
             <div class="buku-card-body">
               <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-judul">{{ b.judul }}</a>
-              <div class="buku-penulis">✍️ {{ b.penulis }}</div>
+              <div class="buku-penulis">{{ b.penulis }}</div>
               {% if current_user.is_staf or current_user.is_operator %}
                 <div class="buku-card-actions">
                   <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm">Edit</a>
@@ -80,7 +80,7 @@
                   {% elif b.stok > 0 %}
                     <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=b.id) }}"
                           onsubmit="return confirm('Ajukan peminjaman buku ini?');">
-                      <button class="btn btn-sm btn-accent" type="submit">📝 Ajukan</button>
+                      <button class="btn btn-sm btn-accent" type="submit">Ajukan</button>
                     </form>
                   {% else %}
                     <span class="btn btn-sm btn-muted" style="cursor:default;">Stok kosong</span>
@@ -100,13 +100,13 @@
 <div id="viewProfesional" style="display:none;">
   {% if not daftar %}
     <div class="card empty-state">
-      <div class="empty-icon">📭</div>
+      <svg class="icon" style="width:2.2rem;height:2.2rem;"><use href="#i-inbox"></use></svg>
       <p>Tidak ada buku ditemukan. Coba kata kunci atau kategori lain.</p>
     </div>
   {% else %}
     <div class="card excel-card" id="excelCard">
       <div class="excel-toolbar">
-        <span class="excel-toolbar-title">📊 Stok Buku — Tampilan Spreadsheet</span>
+        <span class="excel-toolbar-title"><svg class="icon"><use href="#i-bar-chart"></use></svg> Stok Buku — Tampilan Spreadsheet</span>
       </div>
       <div class="table-scroll">
         <table class="tabel-excel">

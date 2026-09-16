@@ -1,0 +1,44 @@
+{% extends "layout/base.html" %}
+{% block title %}Edit Pengguna{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;">
+  <h2>Edit Pengguna</h2>
+  <p class="page-sub" style="margin-top:-0.4rem;">Mengubah data akun <strong>{{ u.username }}</strong>.</p>
+  <form method="POST">
+    <div class="form-group">
+      <label>Nama Lengkap</label>
+      <input type="text" name="nama_lengkap" value="{{ u.nama_lengkap }}" required>
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" value="{{ u.username }}" required>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" value="{{ u.email }}" required>
+    </div>
+    <div class="form-group">
+      <label>No. Telepon</label>
+      <input type="text" name="no_telepon" value="{{ u.no_telepon or '' }}">
+    </div>
+    <div class="form-group">
+      <label>Alamat</label>
+      <textarea name="alamat" rows="2">{{ u.alamat or '' }}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select name="role">
+        <option value="user" {{ 'selected' if u.role == 'user' }}>User (Anggota)</option>
+        <option value="staf" {{ 'selected' if u.role == 'staf' }}>Staf</option>
+        <option value="operator" {{ 'selected' if u.role == 'operator' }}>Operator</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Reset Password (opsional)</label>
+      <input type="password" name="password" placeholder="Kosongkan jika tidak ingin mengubah password">
+    </div>
+    <button class="btn" type="submit">Simpan Perubahan</button>
+    <a href="{{ url_for('auth.daftar_pengguna') }}" class="btn btn-sm" style="background:#888;">Batal</a>
+  </form>
+</div>
+{% endblock %}

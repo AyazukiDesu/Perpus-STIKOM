@@ -2,7 +2,7 @@
 {% block title %}Persetujuan Akun{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h2>✅ Persetujuan Akun Anggota Baru</h2>
+  <h2><svg class="icon"><use href="#i-user-check"></use></svg> Persetujuan Akun Anggota Baru</h2>
   <p class="page-sub">Registrasi mandiri lewat halaman publik harus disetujui di sini sebelum anggota bisa login.</p>
 </div>
 
@@ -10,7 +10,7 @@
 
 {% if not pending %}
   <div class="card empty-state">
-    <div class="empty-icon">📭</div>
+    <svg class="icon" style="width:2.2rem;height:2.2rem;"><use href="#i-inbox"></use></svg>
     <p>Tidak ada pendaftaran yang menunggu persetujuan saat ini.</p>
   </div>
 {% else %}
@@ -32,7 +32,7 @@
               <button class="btn btn-sm" type="submit" style="background:var(--success);">Setujui</button>
             </form>
             <form method="POST" action="{{ url_for('auth.tolak_pengguna', user_id=u.id) }}" style="display:inline;"
-                  onsubmit="return confirm('Yakin tolak registrasi &quot;' + '{{ u.username }}' + '&quot;?');">
+                  onsubmit="return confirm('Yakin tolak registrasi &quot;' + {{ u.username|tojson }} + '&quot;?');">
               <button class="btn btn-sm btn-danger" type="submit">Tolak</button>
             </form>
           </td>

@@ -45,10 +45,10 @@
     var pesan = document.getElementById('pesanCocok');
     if (!pw2) { pesan.textContent = ''; return; }
     if (pw1 === pw2) {
-      pesan.textContent = '✔ Password cocok';
+      pesan.textContent = 'Password cocok';
       pesan.style.color = 'var(--success)';
     } else {
-      pesan.textContent = '✘ Password belum sama';
+      pesan.textContent = 'Password belum sama';
       pesan.style.color = 'var(--danger)';
     }
   }

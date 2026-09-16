@@ -185,11 +185,28 @@ def pinjam_buku(buku_id):
 @role_required("staf", "operator")
 def daftar_peminjaman():
     status_filter = request.args.get("status", "dipinjam")
+    q = request.args.get("q", "").strip()
+
     query = Peminjaman.query
     if status_filter != "semua":
         query = query.filter_by(status=status_filter)
+    if q:
+        like = f"%{q}%"
+        query = (
+            query.join(User, Peminjaman.user_id == User.id)
+            .join(Buku, Peminjaman.buku_id == Buku.id)
+            .filter(
+                db.or_(
+                    User.nama_lengkap.ilike(like),
+                    User.username.ilike(like),
+                    Buku.judul.ilike(like),
+                )
+            )
+        )
     daftar = query.order_by(Peminjaman.tanggal_pinjam.desc()).all()
-    return render_template("peminjaman/daftar.html", daftar=daftar, status_filter=status_filter, today=date.today())
+    return render_template(
+        "peminjaman/daftar.html", daftar=daftar, status_filter=status_filter, q=q, today=date.today()
+    )
 
 
 # ------------------------------------------------------------------
@@ -226,14 +243,15 @@ def kembalikan_buku(peminjaman_id):
 @login_required
 @role_required("user")
 def riwayat_saya():
-    daftar = (
-        Peminjaman.query.filter_by(user_id=current_user.id)
-        .order_by(Peminjaman.id.desc())
-        .all()
-    )
+    q = request.args.get("q", "").strip()
+    query = Peminjaman.query.filter_by(user_id=current_user.id)
+    if q:
+        like = f"%{q}%"
+        query = query.join(Buku, Peminjaman.buku_id == Buku.id).filter(Buku.judul.ilike(like))
+    daftar = query.order_by(Peminjaman.id.desc()).all()
     return render_template(
         "peminjaman/riwayat_anggota.html", daftar=daftar, anggota=current_user,
-        today=date.today(), bisa_batalkan=True,
+        today=date.today(), bisa_batalkan=True, q=q,
     )
 
 
@@ -242,14 +260,15 @@ def riwayat_saya():
 @role_required("staf", "operator")
 def riwayat_anggota(user_id):
     anggota = User.query.get_or_404(user_id)
-    daftar = (
-        Peminjaman.query.filter_by(user_id=user_id)
-        .order_by(Peminjaman.id.desc())
-        .all()
-    )
+    q = request.args.get("q", "").strip()
+    query = Peminjaman.query.filter_by(user_id=user_id)
+    if q:
+        like = f"%{q}%"
+        query = query.join(Buku, Peminjaman.buku_id == Buku.id).filter(Buku.judul.ilike(like))
+    daftar = query.order_by(Peminjaman.id.desc()).all()
     return render_template(
         "peminjaman/riwayat_anggota.html", daftar=daftar, anggota=anggota,
-        today=date.today(), bisa_batalkan=False,
+        today=date.today(), bisa_batalkan=False, q=q,
     )
 
 
@@ -261,9 +280,12 @@ def riwayat_anggota(user_id):
 @role_required("staf", "operator")
 def riwayat_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
-    daftar = (
-        Peminjaman.query.filter_by(buku_id=buku_id)
-        .order_by(Peminjaman.tanggal_pinjam.desc())
-        .all()
-    )
-    return render_template("peminjaman/riwayat_buku.html", daftar=daftar, buku=buku, today=date.today())
+    q = request.args.get("q", "").strip()
+    query = Peminjaman.query.filter_by(buku_id=buku_id)
+    if q:
+        like = f"%{q}%"
+        query = query.join(User, Peminjaman.user_id == User.id).filter(
+            db.or_(User.nama_lengkap.ilike(like), User.username.ilike(like))
+        )
+    daftar = query.order_by(Peminjaman.tanggal_pinjam.desc()).all()
+    return render_template("peminjaman/riwayat_buku.html", daftar=daftar, buku=buku, today=date.today(), q=q)

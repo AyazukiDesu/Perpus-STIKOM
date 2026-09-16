@@ -2,13 +2,13 @@
 {% block title %}Pengajuan Peminjaman{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h2>📝 Pengajuan Peminjaman</h2>
+  <h2><svg class="icon"><use href="#i-clipboard"></use></svg> Pengajuan Peminjaman</h2>
   <p class="page-sub">Tinjau permintaan peminjaman yang diajukan mandiri oleh anggota, lalu setujui atau tolak.</p>
 </div>
 
 {% if not daftar %}
   <div class="card empty-state">
-    <div class="empty-icon">📭</div>
+    <svg class="icon" style="width:2.2rem;height:2.2rem;"><use href="#i-inbox"></use></svg>
     <p>Tidak ada pengajuan peminjaman yang menunggu saat ini.</p>
   </div>
 {% else %}
@@ -20,15 +20,15 @@
           <span class="pengajuan-tanggal">Diajukan sejak {{ p.tanggal_pinjam.strftime('%d-%m-%Y') }}</span>
         </div>
         <h3 class="pengajuan-judul">{{ p.buku.judul }}</h3>
-        <p class="pengajuan-meta">✍️ {{ p.buku.penulis }} &nbsp;·&nbsp; 📗 Stok saat ini: {{ p.buku.stok }}</p>
+        <p class="pengajuan-meta">{{ p.buku.penulis }} &nbsp;·&nbsp; Stok saat ini: {{ p.buku.stok }}</p>
         <p class="pengajuan-meta"><strong>Pemohon:</strong> {{ p.anggota.nama_lengkap }} ({{ p.anggota.username }})</p>
 
         <div class="pengajuan-actions">
           <form method="POST" action="{{ url_for('peminjaman.setujui_pengajuan', peminjaman_id=p.id) }}"
                 onsubmit="return confirm('Setujui pengajuan ini? Stok buku akan berkurang 1.');">
-            <button class="btn btn-sm" style="background:var(--success);" type="submit">✔️ Setujui</button>
+            <button class="btn btn-sm" style="background:var(--success);" type="submit"><svg class="icon"><use href="#i-check"></use></svg> Setujui</button>
           </form>
-          <button type="button" class="btn btn-sm btn-danger" onclick="bukaTolak({{ p.id }})">✖️ Tolak</button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="bukaTolak({{ p.id }})"><svg class="icon"><use href="#i-x"></use></svg> Tolak</button>
           <a href="{{ url_for('buku.detail_buku', buku_id=p.buku.id) }}" class="btn btn-sm btn-muted">Lihat Buku</a>
         </div>
 
