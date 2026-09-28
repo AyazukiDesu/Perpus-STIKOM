@@ -9,15 +9,18 @@ CREATE DATABASE IF NOT EXISTS perpustakaan_db
 USE perpustakaan_db;
 
 -- ---------------------------------------------------------------------
--- TABEL USERS (menyimpan semua role: user/anggota, staf, operator)
+-- TABEL USERS (menyimpan semua role: mahasiswa, staf, kepala_perpustakaan)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
+    -- NISN (10 digit) = ID kartu perpustakaan. Wajib untuk mahasiswa (divalidasi di aplikasi),
+    -- boleh NULL untuk staf/kepala perpustakaan.
+    nisn VARCHAR(20) DEFAULT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     nama_lengkap VARCHAR(150) NOT NULL,
-    role ENUM('user', 'staf', 'operator') NOT NULL DEFAULT 'user',
+    role ENUM('mahasiswa', 'staf', 'kepala_perpustakaan') NOT NULL DEFAULT 'mahasiswa',
     no_telepon VARCHAR(20) DEFAULT NULL,
     alamat VARCHAR(255) DEFAULT NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -29,12 +32,11 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- TABEL KARTU ANGGOTA (kartu perpus digital, 1-1 dengan user role 'user')
+-- TABEL KARTU ANGGOTA (kartu perpus digital, 1-1 dengan user; ID kartu = users.nisn)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS kartu_anggota (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
-    nomor_kartu VARCHAR(30) NOT NULL UNIQUE,
     tanggal_terbit DATE NOT NULL,
     tanggal_kadaluarsa DATE NOT NULL,
     status ENUM('aktif', 'nonaktif') NOT NULL DEFAULT 'aktif',
@@ -74,28 +76,28 @@ CREATE TABLE IF NOT EXISTS peminjaman (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     buku_id INT NOT NULL,
-    diproses_oleh INT DEFAULT NULL, -- staf/operator yang memproses
+    diproses_oleh INT DEFAULT NULL, -- staf/kepala perpustakaan yang memproses
     tanggal_pinjam DATE NOT NULL,
     tanggal_jatuh_tempo DATE NOT NULL,
     tanggal_kembali DATE DEFAULT NULL,
     -- 'diajukan'  : anggota mengajukan sendiri lewat sistem pengajuan peminjaman, menunggu ditinjau.
     -- 'dipinjam'  : pengajuan disetujui / dipinjamkan langsung oleh staf-operator.
-    -- 'ditolak'   : pengajuan ditolak staf/operator.
+    -- 'ditolak'   : pengajuan ditolak staf/kepala perpustakaan.
     status ENUM('diajukan', 'dipinjam', 'dikembalikan', 'terlambat', 'ditolak') NOT NULL DEFAULT 'dipinjam',
-    catatan VARCHAR(255) DEFAULT NULL, -- catatan staf/operator, biasanya alasan penolakan
+    catatan VARCHAR(255) DEFAULT NULL, -- catatan staf/kepala perpustakaan, biasanya alasan penolakan
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (buku_id) REFERENCES buku(id) ON DELETE CASCADE,
     FOREIGN KEY (diproses_oleh) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- DATA AWAL (opsional) - akun operator default
+-- DATA AWAL (opsional) - akun kepala perpustakaan default
 -- Password default: "operator123" (WAJIB diganti setelah login pertama)
 -- Hash di bawah dibuat dengan werkzeug.security.generate_password_hash
 -- ---------------------------------------------------------------------
 -- Catatan: hash contoh TIDAK disertakan di sini karena hash berbeda tiap
 -- generate. Gunakan script `python seed_admin.py` (disertakan dalam paket)
--- untuk membuat akun operator pertama secara otomatis & aman.
+-- untuk membuat akun kepala perpustakaan pertama secara otomatis & aman.
 
 -- ---------------------------------------------------------------------
 -- INDEX TAMBAHAN untuk pencarian & laporan lebih cepat
