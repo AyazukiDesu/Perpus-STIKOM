@@ -4,6 +4,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from extensions import db
 
+# Label tampilan untuk tiap role (nilai di database tetap snake_case).
+ROLE_LABEL = {
+    "mahasiswa": "Mahasiswa",
+    "staf": "Staf",
+    "kepala_perpustakaan": "Kepala Perpustakaan",
+}
+
+# Status peminjaman yang dihitung sebagai "memakai kuota" pinjam.
+STATUS_PINJAMAN_AKTIF = ("diajukan", "dipinjam")
+
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -13,15 +23,22 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     nama_lengkap = db.Column(db.String(150), nullable=False)
-    role = db.Column(db.Enum("user", "staf", "operator", name="role_enum"), nullable=False, default="user")
+    # NISN (10 digit). Wajib untuk mahasiswa; opsional untuk staf/kepala perpustakaan.
+    # NISN inilah yang dipakai sebagai nomor/ID kartu perpustakaan.
+    nisn = db.Column(db.String(20), unique=True, nullable=True)
+    role = db.Column(
+        db.Enum("mahasiswa", "staf", "kepala_perpustakaan", name="role_enum"),
+        nullable=False,
+        default="mahasiswa",
+    )
     no_telepon = db.Column(db.String(20))
     alamat = db.Column(db.String(255))
     is_active_db = db.Column("is_active", db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Status persetujuan akun oleh operator.
+    # Status persetujuan akun oleh kepala perpustakaan.
     # - 'pending'   : baru daftar sendiri lewat form publik, menunggu ditinjau operator, BELUM bisa login.
-    # - 'disetujui' : sudah diverifikasi operator (atau dibuat langsung oleh operator/staf), bisa login normal.
+    # - 'disetujui' : sudah diverifikasi operator (atau dibuat langsung oleh kepala perpustakaan/staf), bisa login normal.
     # - 'ditolak'   : ditolak operator, tidak bisa login.
     # Default 'disetujui' agar akun lama (sebelum fitur ini ada) & akun yang dibuat operator tidak terpengaruh/ter-blok.
     status_akun = db.Column(
@@ -43,16 +60,29 @@ class User(UserMixin, db.Model):
 
     # helper role
     @property
-    def is_operator(self):
-        return self.role == "operator"
+    def is_kepala(self):
+        return self.role == "kepala_perpustakaan"
 
     @property
     def is_staf(self):
         return self.role == "staf"
 
     @property
-    def is_anggota(self):
-        return self.role == "user"
+    def is_mahasiswa(self):
+        return self.role == "mahasiswa"
+
+    @property
+    def role_label(self):
+        return ROLE_LABEL.get(self.role, self.role)
+
+    # ---- kuota peminjaman ----
+    @property
+    def jumlah_pinjaman_aktif(self):
+        """Jumlah buku yang sedang diajukan atau dipinjam (belum dikembalikan)."""
+        return Peminjaman.query.filter(
+            Peminjaman.user_id == self.id,
+            Peminjaman.status.in_(STATUS_PINJAMAN_AKTIF),
+        ).count()
 
     # helper status persetujuan
     @property
@@ -60,7 +90,7 @@ class User(UserMixin, db.Model):
         return self.status_akun == "pending"
 
     @property
-    def ditolak_operator(self):
+    def ditolak_operator(self):  # ditolak oleh kepala perpustakaan
         return self.status_akun == "ditolak"
 
 
@@ -69,10 +99,23 @@ class KartuAnggota(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
-    nomor_kartu = db.Column(db.String(30), unique=True, nullable=False)
     tanggal_terbit = db.Column(db.Date, default=date.today)
     tanggal_kadaluarsa = db.Column(db.Date, nullable=False)
     status = db.Column(db.Enum("aktif", "nonaktif", name="status_kartu_enum"), default="aktif")
+
+    @property
+    def nisn(self):
+        """ID kartu = NISN pemilik kartu (satu sumber data: users.nisn)."""
+        return self.pemilik.nisn
+
+    @property
+    def is_kadaluarsa(self):
+        return date.today() > self.tanggal_kadaluarsa
+
+    @property
+    def bisa_dipakai(self):
+        """Kartu boleh dipakai meminjam jika berstatus aktif & belum kadaluarsa."""
+        return self.status == "aktif" and not self.is_kadaluarsa
 
 
 class Kategori(db.Model):
@@ -117,16 +160,16 @@ class Peminjaman(db.Model):
     tanggal_jatuh_tempo = db.Column(db.Date, nullable=False)
     tanggal_kembali = db.Column(db.Date)
     # Alur status:
-    #   'diajukan'     -> anggota mengajukan peminjaman sendiri, menunggu ditinjau staf/operator.
-    #   'dipinjam'     -> pengajuan disetujui (atau dipinjamkan langsung oleh staf/operator di meja).
+    #   'diajukan'     -> anggota mengajukan peminjaman sendiri, menunggu ditinjau staf/kepala perpustakaan.
+    #   'dipinjam'     -> pengajuan disetujui (atau dipinjamkan langsung oleh staf/kepala perpustakaan di meja).
     #   'dikembalikan' -> buku sudah dikembalikan.
-    #   'ditolak'      -> pengajuan ditolak staf/operator.
+    #   'ditolak'      -> pengajuan ditolak staf/kepala perpustakaan.
     #   'terlambat'    -> (dihitung dinamis lewat is_telat, bukan disimpan sebagai status baris)
     status = db.Column(
         db.Enum("diajukan", "dipinjam", "dikembalikan", "terlambat", "ditolak", name="status_pinjam_enum"),
         default="dipinjam",
     )
-    # Catatan opsional dari staf/operator, biasanya diisi saat menolak pengajuan
+    # Catatan opsional dari staf/kepala perpustakaan, biasanya diisi saat menolak pengajuan
     # agar anggota tahu alasannya.
     catatan = db.Column(db.String(255))
 

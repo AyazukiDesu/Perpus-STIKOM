@@ -7,15 +7,18 @@
 </div>
 
 <form method="GET" class="search-bar">
-  <input type="text" name="q" placeholder="Cari judul, penulis, atau ISBN..." value="{{ q }}">
+  <div class="search-field">
+    <svg class="icon"><use href="#i-search"></use></svg>
+    <input type="text" name="q" placeholder="Cari judul, penulis, atau ISBN..." value="{{ q }}">
+  </div>
   {% if kategori_id %}<input type="hidden" name="kategori_id" value="{{ kategori_id }}">{% endif %}
   <button class="btn" type="submit">Cari</button>
-  {% if current_user.is_staf or current_user.is_operator %}
+  {% if current_user.is_staf or current_user.is_kepala %}
     <a href="{{ url_for('buku.tambah_buku') }}" class="btn btn-accent">+ Tambah Buku</a>
   {% endif %}
 </form>
 
-{% if current_user.is_staf or current_user.is_operator %}
+{% if current_user.is_staf or current_user.is_kepala %}
   <div class="mode-tampilan-switch" role="group" aria-label="Ganti mode tampilan">
     <button type="button" id="btnModeRak" class="mode-btn" onclick="setModeTampilan('rak')"><svg class="icon"><use href="#i-folder"></use></svg> Mode Rak</button>
     <button type="button" id="btnModeProfesional" class="mode-btn" onclick="setModeTampilan('profesional')"><svg class="icon"><use href="#i-bar-chart"></use></svg> Mode Profesional</button>
@@ -51,32 +54,43 @@
               {% if b.sampul_path %}
                 <img src="{{ url_for('static', filename=b.sampul_path.replace('static/', '', 1)) }}" alt="Sampul {{ b.judul }}">
               {% else %}
-                <div class="buku-cover-placeholder">Tidak ada sampul</div>
+                <div class="buku-cover-placeholder cover-v{{ b.id % 4 }}">
+                  <span class="cover-inisial">{{ (b.judul or '?')[:1]|upper }}</span>
+                  <span class="cover-ket">Tanpa sampul</span>
+                </div>
               {% endif %}
-              <span class="buku-stok-badge {{ 'stok-habis' if b.stok == 0 else '' }}">
+              <span class="buku-stok-badge {{ 'stok-habis' if b.stok == 0 else ('stok-tipis' if b.stok <= 2 else '') }}">
                 {{ 'Kosong' if b.stok == 0 else b.stok ~ ' stok' }}
               </span>
             </a>
             <div class="buku-card-body">
               <a href="{{ url_for('buku.detail_buku', buku_id=b.id) }}" class="buku-judul">{{ b.judul }}</a>
               <div class="buku-penulis">{{ b.penulis }}</div>
-              {% if current_user.is_staf or current_user.is_operator %}
+              {% if b.tahun_terbit or b.penerbit %}
+                <div class="buku-meta">
+                  {% if b.tahun_terbit %}<span>{{ b.tahun_terbit }}</span>{% endif %}
+                  {% if b.penerbit %}<span title="{{ b.penerbit }}">{{ b.penerbit }}</span>{% endif %}
+                </div>
+              {% endif %}
+              {% if current_user.is_staf or current_user.is_kepala %}
                 <div class="buku-card-actions">
-                  <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm">Edit</a>
+                  <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm btn-icon" title="Edit" aria-label="Edit"><svg class="icon"><use href="#i-edit"></use></svg></a>
                   {% if b.stok > 0 %}
-                    <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=b.id) }}" class="btn btn-sm btn-warning">Pinjamkan</a>
+                    <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=b.id) }}" class="btn btn-sm btn-accent"><svg class="icon"><use href="#i-book-open"></use></svg> Pinjamkan</a>
                   {% endif %}
-                  {% if current_user.is_operator %}
+                  {% if current_user.is_kepala %}
                     <form method="POST" action="{{ url_for('buku.hapus_buku', buku_id=b.id) }}"
                           onsubmit="return confirm('Yakin hapus buku ini?');">
-                      <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                      <button class="btn btn-sm btn-danger btn-icon" type="submit" title="Hapus" aria-label="Hapus"><svg class="icon"><use href="#i-trash"></use></svg></button>
                     </form>
                   {% endif %}
                 </div>
-              {% elif current_user.is_anggota %}
+              {% elif current_user.is_mahasiswa %}
                 <div class="buku-card-actions">
                   {% if b.id in buku_id_aktif %}
                     <span class="btn btn-sm btn-muted" style="cursor:default;">Sudah diajukan</span>
+                  {% elif kuota_penuh %}
+                    <span class="btn btn-sm btn-muted" style="cursor:default;" title="Maksimal {{ maks_pinjam }} buku">Kuota penuh</span>
                   {% elif b.stok > 0 %}
                     <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=b.id) }}"
                           onsubmit="return confirm('Ajukan peminjaman buku ini?');">
@@ -96,7 +110,7 @@
 {% endif %}
 </div>
 
-{% if current_user.is_staf or current_user.is_operator %}
+{% if current_user.is_staf or current_user.is_kepala %}
 <div id="viewProfesional" style="display:none;">
   {% if not daftar %}
     <div class="card empty-state">
@@ -135,14 +149,14 @@
                 <td>{{ b.kategori.nama_kategori if b.kategori else '-' }}</td>
                 <td class="sel-angka">{{ b.stok }}</td>
                 <td class="sel-aksi">
-                  <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm">Edit</a>
+                  <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm btn-icon" title="Edit" aria-label="Edit"><svg class="icon"><use href="#i-edit"></use></svg></a>
                   {% if b.stok > 0 %}
-                    <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=b.id) }}" class="btn btn-sm btn-warning">Pinjamkan</a>
+                    <a href="{{ url_for('peminjaman.pinjam_buku', buku_id=b.id) }}" class="btn btn-sm btn-accent"><svg class="icon"><use href="#i-book-open"></use></svg> Pinjamkan</a>
                   {% endif %}
-                  {% if current_user.is_operator %}
+                  {% if current_user.is_kepala %}
                     <form method="POST" action="{{ url_for('buku.hapus_buku', buku_id=b.id) }}"
                           onsubmit="return confirm('Yakin hapus buku ini?');" style="display:inline;">
-                      <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                      <button class="btn btn-sm btn-danger btn-icon" type="submit" title="Hapus" aria-label="Hapus"><svg class="icon"><use href="#i-trash"></use></svg></button>
                     </form>
                   {% endif %}
                 </td>
@@ -171,7 +185,7 @@
     var btnRak = document.getElementById('btnModeRak');
     var btnPro = document.getElementById('btnModeProfesional');
     var label = document.getElementById('labelModeTampilan');
-    if (!viewRak) return; // halaman ini tidak punya toggle (bukan staf/operator)
+    if (!viewRak) return; // halaman ini tidak punya toggle (bukan staf/kepala perpustakaan)
 
     if (mode === 'profesional' && viewPro) {
       viewRak.style.display = 'none';

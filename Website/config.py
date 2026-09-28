@@ -26,8 +26,18 @@ class Config:
     # Batas hari peminjaman default
     LAMA_PINJAM_HARI = 7
 
+    # Batas maksimal buku yang boleh dipinjam/diajukan sekaligus per mahasiswa
+    # (pengajuan yang menunggu persetujuan ikut dihitung).
+    MAKS_PINJAM_PER_USER = 2
+
+    # Panjang NISN (Nomor Induk Siswa Nasional = 10 digit angka)
+    NISN_PANJANG = 10
+
+    # Lama masa berlaku kartu perpustakaan (hari) saat diterbitkan / diperpanjang
+    MASA_BERLAKU_KARTU_HARI = 365
+
     # Jumlah hari sebelum jatuh tempo untuk mulai menampilkan peringatan
-    # "akan jatuh tempo" ke anggota & staf/operator (menggantikan sistem denda).
+    # "akan jatuh tempo" ke mahasiswa & staf/kepala perpustakaan (menggantikan sistem denda).
     PERINGATAN_JATUH_TEMPO_HARI = 3
 
     # Daftar domain email yang dianggap valid saat registrasi/tambah pengguna

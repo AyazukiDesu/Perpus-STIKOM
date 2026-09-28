@@ -2,8 +2,8 @@
 {% block title %}Persetujuan Akun{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h2><svg class="icon"><use href="#i-user-check"></use></svg> Persetujuan Akun Anggota Baru</h2>
-  <p class="page-sub">Registrasi mandiri lewat halaman publik harus disetujui di sini sebelum anggota bisa login.</p>
+  <h2><svg class="icon"><use href="#i-user-check"></use></svg> Persetujuan Akun Mahasiswa Baru</h2>
+  <p class="page-sub">Registrasi mandiri lewat halaman publik harus disetujui di sini sebelum mahasiswa bisa login.</p>
 </div>
 
 <a href="{{ url_for('auth.daftar_pengguna') }}" class="btn btn-sm btn-muted" style="margin-bottom:1rem;">&larr; Kembali ke Manajemen Pengguna</a>
@@ -18,18 +18,19 @@
     <div class="table-scroll">
     <table>
       <thead>
-        <tr><th>Nama Lengkap</th><th>Username</th><th>Email</th><th>Daftar Pada</th><th>Aksi</th></tr>
+        <tr><th>Nama Lengkap</th><th>NISN</th><th>Username</th><th>Email</th><th>Daftar Pada</th><th>Aksi</th></tr>
       </thead>
       <tbody>
         {% for u in pending %}
         <tr>
           <td>{{ u.nama_lengkap }}</td>
+          <td>{{ u.nisn or '-' }}</td>
           <td>{{ u.username }}</td>
           <td>{{ u.email }}</td>
           <td>{{ u.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
           <td style="white-space:nowrap;">
             <form method="POST" action="{{ url_for('auth.setujui_pengguna', user_id=u.id) }}" style="display:inline;">
-              <button class="btn btn-sm" type="submit" style="background:var(--success);">Setujui</button>
+              <button class="btn btn-sm btn-success" type="submit">Setujui</button>
             </form>
             <form method="POST" action="{{ url_for('auth.tolak_pengguna', user_id=u.id) }}" style="display:inline;"
                   onsubmit="return confirm('Yakin tolak registrasi &quot;' + {{ u.username|tojson }} + '&quot;?');">

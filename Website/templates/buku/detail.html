@@ -18,7 +18,7 @@
     <p><strong>Stok tersedia:</strong> {{ buku.stok }}</p>
     <p>{{ buku.deskripsi or '' }}</p>
 
-    {% if current_user.is_staf or current_user.is_operator %}
+    {% if current_user.is_staf or current_user.is_kepala %}
       <a href="{{ url_for('buku.edit_buku', buku_id=buku.id) }}" class="btn">Edit Buku</a>
       <a href="{{ url_for('peminjaman.riwayat_buku', buku_id=buku.id) }}" class="btn">Riwayat Peminjaman</a>
       {% if buku.stok > 0 %}
@@ -26,20 +26,25 @@
       {% endif %}
     {% endif %}
 
-    {% if current_user.is_anggota %}
+    {% if current_user.is_mahasiswa %}
       {% if pengajuan_aktif %}
         {% if pengajuan_aktif.status == 'diajukan' %}
           <div class="flash flash-warning" style="position:static; margin-top:0.8rem;">
-            Pengajuan peminjaman Anda untuk buku ini sedang menunggu persetujuan staf/operator.
+            Pengajuan peminjaman Anda untuk buku ini sedang menunggu persetujuan staf/kepala perpustakaan.
           </div>
         {% else %}
           <div class="flash flash-info" style="position:static; margin-top:0.8rem;">
             Anda sedang meminjam buku ini. Jatuh tempo: {{ pengajuan_aktif.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}.
           </div>
         {% endif %}
+      {% elif kuota_penuh %}
+        <div class="flash flash-warning" style="position:static; margin-top:0.8rem;">
+          Batas peminjaman tercapai ({{ jumlah_aktif }}/{{ maks_pinjam }} buku). Kembalikan salah satu buku terlebih dahulu untuk meminjam buku lain.
+        </div>
       {% elif buku.stok > 0 %}
+        <p style="margin-top:0.8rem; font-size:0.85rem; color:var(--muted);">Kuota pinjam Anda: {{ jumlah_aktif }}/{{ maks_pinjam }} buku.</p>
         <form method="POST" action="{{ url_for('peminjaman.ajukan_peminjaman', buku_id=buku.id) }}"
-              onsubmit="return confirm('Ajukan peminjaman buku ini? Permintaan akan ditinjau oleh staf/operator.');" style="margin-top:0.5rem;">
+              onsubmit="return confirm('Ajukan peminjaman buku ini? Permintaan akan ditinjau oleh staf/kepala perpustakaan.');" style="margin-top:0.5rem;">
           <button class="btn btn-accent" type="submit">Ajukan Peminjaman</button>
         </form>
       {% else %}

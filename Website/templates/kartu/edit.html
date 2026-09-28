@@ -1,0 +1,33 @@
+{% extends "layout/base.html" %}
+{% block title %}Atur Kartu Perpustakaan{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;">
+  <h2>Atur Kartu Perpustakaan</h2>
+  <p class="page-sub" style="margin-top:-0.4rem;">
+    Pemilik: <strong>{{ pemilik.nama_lengkap }}</strong> ({{ pemilik.role_label }})
+  </p>
+  <form method="POST">
+    <div class="form-group">
+      <label>NISN (ID Kartu) {% if pemilik.is_mahasiswa %}<small style="color:var(--muted);">wajib, {{ config.NISN_PANJANG }} digit</small>{% else %}<small style="color:var(--muted);">opsional</small>{% endif %}</label>
+      <input type="text" name="nisn" value="{{ pemilik.nisn or '' }}" inputmode="numeric" maxlength="{{ config.NISN_PANJANG }}" pattern="[0-9]*" {{ 'required' if pemilik.is_mahasiswa }}>
+    </div>
+    <div class="form-group">
+      <label>Tanggal Terbit</label>
+      <input type="date" name="tanggal_terbit" value="{{ kartu.tanggal_terbit.isoformat() }}" required>
+    </div>
+    <div class="form-group">
+      <label>Berlaku Sampai</label>
+      <input type="date" name="tanggal_kadaluarsa" value="{{ kartu.tanggal_kadaluarsa.isoformat() }}" required>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status">
+        <option value="aktif" {{ 'selected' if kartu.status == 'aktif' }}>Aktif</option>
+        <option value="nonaktif" {{ 'selected' if kartu.status == 'nonaktif' }}>Nonaktif</option>
+      </select>
+    </div>
+    <button class="btn" type="submit">Simpan</button>
+    <a href="{{ url_for('kartu.kelola_kartu') }}" class="btn btn-ghost">Batal</a>
+  </form>
+</div>
+{% endblock %}

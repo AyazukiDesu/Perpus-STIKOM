@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head">
   <h2><svg class="icon"><use href="#i-user"></use></svg> Profil Saya</h2>
-  <p class="page-sub">Kelola data diri dan password akun Anda sendiri ({{ current_user.role }}).</p>
+  <p class="page-sub">Kelola data diri dan password akun Anda sendiri ({{ current_user.role_label }}).</p>
 </div>
 
 <div class="card" style="max-width:480px;">
@@ -32,17 +32,19 @@
     <hr style="border:none; border-top:1px solid var(--border); margin:1.1rem 0;">
     <p class="page-sub" style="margin-bottom:0.6rem;">Ganti password (opsional — kosongkan semua jika tidak ingin mengganti)</p>
 
+    {% if not current_user.is_kepala %}
     <div class="form-group">
       <label>Password Lama</label>
-      <input type="password" name="password_lama" autocomplete="current-password">
+      <input type="password" name="password_lama" data-toggle-pw autocomplete="current-password">
     </div>
+    {% endif %}
     <div class="form-group">
       <label>Password Baru</label>
-      <input type="password" name="password_baru" autocomplete="new-password">
+      <input type="password" name="password_baru" data-toggle-pw autocomplete="new-password">
     </div>
     <div class="form-group">
       <label>Konfirmasi Password Baru</label>
-      <input type="password" name="password_baru2" autocomplete="new-password">
+      <input type="password" name="password_baru2" data-toggle-pw autocomplete="new-password">
     </div>
 
     <button class="btn" type="submit">Simpan Perubahan</button>

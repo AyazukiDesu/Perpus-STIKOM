@@ -84,7 +84,7 @@ def _data_grafik_distribusi_kategori():
 @login_required
 def index():
     context = {}
-    if current_user.is_anggota:
+    if current_user.is_mahasiswa:
         pinjaman_aktif = Peminjaman.query.filter_by(
             user_id=current_user.id, status="dipinjam"
         ).all()
@@ -103,6 +103,8 @@ def index():
         context["jumlah_sedang_dipinjam"] = len(pinjaman_aktif)
         context["jumlah_pernah_dipinjam"] = Peminjaman.query.filter_by(user_id=current_user.id).count()
         context["kartu_saya"] = current_user.kartu
+        context["maks_pinjam"] = current_app.config["MAKS_PINJAM_PER_USER"]
+        context["jumlah_kuota_terpakai"] = current_user.jumlah_pinjaman_aktif
 
         # rekomendasi: buku paling populer (paling sering dipinjam) yang
         # sedang tersedia stoknya dan belum sedang dipinjam/diajukan anggota ini
@@ -123,7 +125,7 @@ def index():
             (b, jumlah) for b, jumlah in rekomendasi if b.id not in buku_id_aktif
         ][:5]
     else:
-        # staf & operator melihat ringkasan umum + grafik
+        # staf & kepala perpustakaan melihat ringkasan umum + grafik
         context["total_buku"] = Buku.query.count()
         context["total_stok"] = sum(b.stok for b in Buku.query.all())
         context["sedang_dipinjam"] = Peminjaman.query.filter_by(status="dipinjam").count()
@@ -163,10 +165,10 @@ def index():
             Peminjaman.query.order_by(Peminjaman.id.desc()).limit(6).all()
         )
 
-        if current_user.is_operator:
-            context["total_anggota"] = User.query.filter_by(role="user").count()
+        if current_user.is_kepala:
+            context["total_anggota"] = User.query.filter_by(role="mahasiswa").count()
             context["menunggu_persetujuan"] = User.query.filter_by(
-                role="user", status_akun="pending"
+                role="mahasiswa", status_akun="pending"
             ).count()
 
     return render_template("dashboard.html", today=date.today(), **context)

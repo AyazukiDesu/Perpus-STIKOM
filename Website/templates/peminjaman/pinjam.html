@@ -6,16 +6,16 @@
   <p>Stok tersedia: <strong>{{ buku.stok }}</strong></p>
   <form method="POST">
     <div class="form-group">
-      <label>Pilih Anggota</label>
+      <label>Pilih Mahasiswa</label>
       <select name="user_id" required>
-        <option value="">- Pilih Anggota -</option>
+        <option value="">- Pilih Mahasiswa -</option>
         {% for a in anggota_list %}
-          <option value="{{ a.id }}">{{ a.nama_lengkap }} ({{ a.username }})</option>
+          <option value="{{ a.id }}">{{ a.nama_lengkap }} ({{ a.nisn or a.username }}) — kuota {{ a.jumlah_pinjaman_aktif }}/{{ config.MAKS_PINJAM_PER_USER }}</option>
         {% endfor %}
       </select>
     </div>
     <button class="btn" type="submit">Proses Peminjaman</button>
-    <a href="{{ url_for('buku.detail_buku', buku_id=buku.id) }}" class="btn btn-sm" style="background:#888;">Batal</a>
+    <a href="{{ url_for('buku.detail_buku', buku_id=buku.id) }}" class="btn btn-ghost">Batal</a>
   </form>
 </div>
 {% endblock %}

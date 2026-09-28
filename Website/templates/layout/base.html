@@ -19,7 +19,7 @@
   </script>
   {% block extra_head %}{% endblock %}
 </head>
-{% set pakai_sidebar = current_user.is_authenticated and current_user.is_operator %}
+{% set pakai_sidebar = current_user.is_authenticated and current_user.is_kepala %}
 <body class="{{ 'has-sidebar' if pakai_sidebar else '' }}">
   {% set tampilkan_loader_awal = (request.endpoint in ['auth.register', 'auth.login']) %}
   <div class="page-loader{{ '' if tampilkan_loader_awal else ' page-loader-hidden' }}" id="pageLoader">
@@ -31,7 +31,7 @@
   {% include "layout/icons.html" %}
 
   {% if pakai_sidebar %}
-    {# ================= SIDEBAR - khusus akun OPERATOR ================= #}
+    {# ================= SIDEBAR - khusus akun KEPALA PERPUSTAKAAN ================= #}
     <aside class="sidebar" id="sidebarOperator">
       <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand">
         <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo STIKOM Kendari">
@@ -75,6 +75,9 @@
         </div>
 
         <div class="sidebar-nav-label">Administrasi</div>
+        <a class="side-link" href="{{ url_for('kartu.kelola_kartu') }}">
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kelola Kartu</span>
+        </a>
         <a class="side-link" href="{{ url_for('auth.daftar_pengguna') }}">
           <span class="side-link-main"><svg class="nav-icon"><use href="#i-users"></use></svg>Pengguna</span>
         </a>
@@ -110,9 +113,9 @@
         {% if current_user.is_authenticated %}
           <a class="nav-link" href="{{ url_for('dashboard.index') }}"><svg class="nav-icon"><use href="#i-home"></use></svg>Dashboard</a>
 
-          {% if current_user.is_anggota %}
+          {% if current_user.is_mahasiswa %}
             <a class="nav-link" href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg>Koleksi Buku</a>
-            <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kartu Anggota</a>
+            <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kartu Perpustakaan</a>
             <a class="nav-link" href="{{ url_for('peminjaman.riwayat_saya') }}"><svg class="nav-icon"><use href="#i-clock"></use></svg>Riwayat Saya</a>
           {% endif %}
 
@@ -141,6 +144,7 @@
                 <a href="{{ url_for('laporan.buku_tidak_populer') }}"><svg class="nav-icon"><use href="#i-trend-down"></use></svg>Buku Tidak Populer</a>
               </div>
             </div>
+            <a class="nav-link" href="{{ url_for('kartu.kelola_kartu') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kelola Kartu</a>
             <a class="nav-link" href="{{ url_for('kartu.kartu_saya') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg>Kartu Saya</a>
             <a class="nav-link" href="{{ url_for('auth.profil') }}"><svg class="nav-icon"><use href="#i-user"></use></svg>Profil Saya</a>
           {% endif %}
@@ -150,8 +154,17 @@
 
       <div class="navbar-right">
         {% if current_user.is_authenticated %}
-          <span class="user-chip">{{ current_user.nama_lengkap }} · {{ current_user.role }}</span>
-          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-accent"><svg class="nav-icon" style="margin-right:0.3rem;"><use href="#i-log-out"></use></svg>Logout</a>
+          {# Avatar bundar berisi inisial nama (tanpa foto profil) #}
+          {% set _bagian = (current_user.nama_lengkap or '').split() %}
+          {% set inisial = ((_bagian[0][:1] ~ (_bagian[-1][:1] if _bagian|length > 1 else '')) if _bagian else '?')|upper %}
+          {% if current_user.is_mahasiswa %}<div class="user-card">{% else %}<a href="{{ url_for('auth.profil') }}" class="user-card user-card-link" title="Profil Saya">{% endif %}
+            <span class="user-avatar avatar-{{ current_user.role }}" aria-hidden="true">{{ inisial }}</span>
+            <span class="user-meta">
+              <span class="user-name">{{ current_user.nama_lengkap }}</span>
+              <span class="user-role">{{ current_user.role_label }}</span>
+            </span>
+          {% if current_user.is_mahasiswa %}</div>{% else %}</a>{% endif %}
+          <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Logout" aria-label="Logout"><svg class="nav-icon"><use href="#i-log-out"></use></svg><span>Logout</span></a>
         {% else %}
           <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-accent js-nav-loader">Login</a>
           <a href="{{ url_for('auth.register') }}" class="js-nav-loader" style="color:#f4e9d8; font-size:0.85rem;">Daftar</a>
@@ -181,6 +194,35 @@
   </div>
 
   <script>
+    /* ---------------- TOMBOL LIHAT PASSWORD ----------------
+       Semua <input type="password" data-toggle-pw> otomatis diberi ikon mata. */
+    (function () {
+      document.querySelectorAll('input[data-toggle-pw]').forEach(function (input) {
+        var wrap = document.createElement('span');
+        wrap.className = 'pw-field';
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+
+        var tombol = document.createElement('button');
+        tombol.type = 'button';
+        tombol.className = 'pw-toggle';
+        tombol.setAttribute('aria-label', 'Tampilkan password');
+        tombol.setAttribute('title', 'Tampilkan password');
+        tombol.innerHTML = '<svg class="icon"><use href="#i-eye"></use></svg>';
+        wrap.appendChild(tombol);
+
+        tombol.addEventListener('click', function () {
+          var tampil = input.type === 'password';
+          input.type = tampil ? 'text' : 'password';
+          tombol.querySelector('use').setAttribute('href', tampil ? '#i-eye-off' : '#i-eye');
+          var label = tampil ? 'Sembunyikan password' : 'Tampilkan password';
+          tombol.setAttribute('aria-label', label);
+          tombol.setAttribute('title', label);
+          input.focus();
+        });
+      });
+    })();
+
     /* ---------------- LOADER TRANSISI ANTAR HALAMAN ---------------- */
     (function () {
       var loader = document.getElementById('pageLoader');

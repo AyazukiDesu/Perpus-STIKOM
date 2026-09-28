@@ -6,9 +6,9 @@ from models import User
 app = create_app()
 
 with app.app_context():
-    print("=== Buat Akun Operator Pertama ===")
-    if User.query.filter_by(role="operator").first():
-        print("Sudah ada akun operator di database. Tidak perlu membuat lagi.")
+    print("=== Buat Akun Kepala Perpustakaan Pertama ===")
+    if User.query.filter_by(role="kepala_perpustakaan").first():
+        print("Sudah ada akun kepala perpustakaan di database. Tidak perlu membuat lagi.")
     else:
         username = input("Username: ").strip()
         email = input("Email: ").strip()
@@ -18,7 +18,7 @@ with app.app_context():
         if User.query.filter_by(username=username).first():
             print("Username sudah dipakai. Batal.")
         else:
-            user = User(username=username, email=email, nama_lengkap=nama_lengkap, role="operator")
+            user = User(username=username, email=email, nama_lengkap=nama_lengkap, role="kepala_perpustakaan")
             user.set_password(password)
             db.session.add(user)
             db.session.commit()

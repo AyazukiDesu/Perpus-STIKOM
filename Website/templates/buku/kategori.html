@@ -16,11 +16,19 @@
 {% if kategori_list %}
 <div class="kategori-grid">
   {% for k in kategori_list %}
-    <a href="{{ url_for('buku.daftar_buku', kategori_id=k.id) }}" class="kategori-card">
-      <svg class="icon kategori-icon"><use href="#i-book"></use></svg>
-      <div class="kategori-nama">{{ k.nama_kategori }}</div>
-      <div class="kategori-jumlah">{{ k.buku_list|length }} buku</div>
-    </a>
+    <div class="kategori-item" style="display:flex; flex-direction:column; gap:0.4rem;">
+      <a href="{{ url_for('buku.daftar_buku', kategori_id=k.id) }}" class="kategori-card">
+        <svg class="icon kategori-icon"><use href="#i-book"></use></svg>
+        <div class="kategori-nama">{{ k.nama_kategori }}</div>
+        <div class="kategori-jumlah">{{ k.buku_list|length }} buku</div>
+      </a>
+      {% if current_user.is_staf or current_user.is_kepala %}
+      <form method="POST" action="{{ url_for('buku.hapus_kategori', kategori_id=k.id) }}"
+            onsubmit="return confirm('Hapus kategori &quot;' + {{ k.nama_kategori|tojson }} + '&quot;?{% if k.buku_list %} {{ k.buku_list|length }} buku di dalamnya tidak ikut terhapus, tetapi menjadi Tanpa Kategori.{% endif %}');">
+        <button class="btn btn-sm btn-danger" type="submit" style="width:100%;"><svg class="icon"><use href="#i-trash"></use></svg> Hapus</button>
+      </form>
+      {% endif %}
+    </div>
   {% endfor %}
 </div>
 {% else %}

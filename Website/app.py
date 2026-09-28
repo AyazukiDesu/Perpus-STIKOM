@@ -30,11 +30,11 @@ def create_app():
     @app.context_processor
     def inject_jumlah_pending_akun():
         # Dipakai navbar untuk menampilkan badge jumlah akun yang menunggu
-        # persetujuan. Hanya dihitung untuk operator yang sedang login agar
+        # persetujuan. Hanya dihitung untuk kepala perpustakaan yang sedang login agar
         # tidak membebani query di halaman lain / role lain.
         from flask_login import current_user
-        if current_user.is_authenticated and current_user.is_operator:
-            jumlah = User.query.filter_by(role="user", status_akun="pending").count()
+        if current_user.is_authenticated and current_user.is_kepala:
+            jumlah = User.query.filter_by(role="mahasiswa", status_akun="pending").count()
         else:
             jumlah = 0
         return {"jumlah_pending_akun": jumlah}
@@ -42,10 +42,10 @@ def create_app():
     @app.context_processor
     def inject_jumlah_pengajuan_peminjaman():
         # Dipakai navbar/sidebar untuk menampilkan badge jumlah pengajuan
-        # peminjaman yang menunggu ditinjau. Hanya dihitung untuk staf/operator.
+        # peminjaman yang menunggu ditinjau. Hanya dihitung untuk staf/kepala perpustakaan.
         from flask_login import current_user
         from models import Peminjaman
-        if current_user.is_authenticated and (current_user.is_staf or current_user.is_operator):
+        if current_user.is_authenticated and (current_user.is_staf or current_user.is_kepala):
             jumlah = Peminjaman.query.filter_by(status="diajukan").count()
         else:
             jumlah = 0

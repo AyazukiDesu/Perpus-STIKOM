@@ -1,18 +1,14 @@
-import random
-import string
 from datetime import date, timedelta
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 
 from extensions import db
 from models import User, KartuAnggota, Peminjaman
 from utils.decorators import role_required
+from utils.kartu import validasi_nisn, terbitkan_kartu_jika_belum_ada as _terbitkan_kartu_jika_belum_ada
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
-
-
-_PREFIX_KARTU = {"user": "ANG", "staf": "STF", "operator": "OPR"}
 
 
 def _email_domain_valid(email):
@@ -24,45 +20,17 @@ def _email_domain_valid(email):
     return domain in allowed
 
 
-def _generate_nomor_kartu(role="user"):
-    """Buat nomor kartu unik, format <PREFIX>-XXXXXX.
-    Prefix mengikuti role pemilik kartu: ANG (anggota), STF (staf), OPR (operator)."""
-    prefix = _PREFIX_KARTU.get(role, "ANG")
-    while True:
-        kode = f"{prefix}-" + "".join(random.choices(string.digits, k=6))
-        if not KartuAnggota.query.filter_by(nomor_kartu=kode).first():
-            return kode
-
-
-def _terbitkan_kartu_jika_belum_ada(user):
-    """Terbitkan kartu perpustakaan digital untuk user manapun (semua role)
-    jika dia belum punya. Dipakai saat akun dibuat/disetujui, dan sebagai
-    fallback 'lazy create' saat akun lama (dibuat sebelum fitur ini ada)
-    membuka halaman kartunya sendiri."""
-    if user.kartu:
-        return user.kartu
-    kartu = KartuAnggota(
-        user_id=user.id,
-        nomor_kartu=_generate_nomor_kartu(user.role),
-        tanggal_terbit=date.today(),
-        tanggal_kadaluarsa=date.today() + timedelta(days=365),
-        status="aktif",
-    )
-    db.session.add(kartu)
-    db.session.commit()
-    return kartu
-
-
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    # Registrasi publik HANYA untuk role 'user' (anggota), dan HARUS lewat
-    # persetujuan operator dulu sebelum bisa login (status_akun='pending').
-    # Akun staf/operator dibuat oleh operator lewat menu manajemen pengguna,
+    # Registrasi publik HANYA untuk role 'mahasiswa', dan HARUS lewat
+    # persetujuan kepala perpustakaan dulu sebelum bisa login (status_akun='pending').
+    # Akun staf/kepala perpustakaan dibuat oleh kepala perpustakaan lewat menu manajemen pengguna,
     # dan otomatis langsung 'disetujui' (lihat tambah_pengguna()).
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()
         nama_lengkap = request.form.get("nama_lengkap", "").strip()
+        nisn_input = request.form.get("nisn", "")
         password = request.form.get("password", "")
         password2 = request.form.get("password2", "")
 
@@ -82,6 +50,11 @@ def register():
             flash("Domain email tidak diizinkan. Gunakan email pribadi yang umum (gmail, yahoo, outlook, dsb).", "danger")
             return redirect(url_for("auth.register"))
 
+        nisn, err = validasi_nisn(nisn_input, wajib=True)
+        if err:
+            flash(err, "danger")
+            return redirect(url_for("auth.register"))
+
         if User.query.filter_by(username=username).first():
             flash("Username sudah digunakan.", "danger")
             return redirect(url_for("auth.register"))
@@ -94,7 +67,8 @@ def register():
             username=username,
             email=email,
             nama_lengkap=nama_lengkap,
-            role="user",
+            nisn=nisn,
+            role="mahasiswa",
             status_akun="pending",
         )
         user.set_password(password)
@@ -102,13 +76,13 @@ def register():
         db.session.commit()
 
         # Catatan: kartu anggota digital SENGAJA belum dibuat di sini.
-        # Kartu baru diterbitkan otomatis saat operator menyetujui akun
+        # Kartu baru diterbitkan otomatis saat kepala perpustakaan menyetujui akun
         # (lihat setujui_pengguna()), supaya masa berlaku kartu dihitung
         # sejak tanggal disetujui, bukan sejak tanggal daftar.
 
         flash(
             "Registrasi berhasil! Akun Anda akan aktif setelah disetujui "
-            "oleh operator perpustakaan. Silakan cek kembali nanti.",
+            "oleh kepala perpustakaan. Silakan cek kembali nanti.",
             "success",
         )
         return redirect(url_for("auth.login"))
@@ -125,29 +99,33 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
+        # Login bisa memakai USERNAME atau NISN. Username dicocokkan lebih dulu;
+        # jika tidak ada yang cocok, baru dicoba sebagai NISN (NISN bersifat unik).
         user = User.query.filter_by(username=username).first()
+        if user is None and username:
+            user = User.query.filter_by(nisn=username).first()
         if user and user.check_password(password):
             if user.menunggu_persetujuan:
                 flash(
-                    "Akun Anda masih menunggu persetujuan operator perpustakaan. "
+                    "Akun Anda masih menunggu persetujuan kepala perpustakaan. "
                     "Silakan coba login lagi nanti.",
                     "warning",
                 )
                 return redirect(url_for("auth.login"))
             if user.ditolak_operator:
                 flash(
-                    "Registrasi akun Anda ditolak oleh operator. "
-                    "Hubungi operator perpustakaan untuk informasi lebih lanjut.",
+                    "Registrasi akun Anda ditolak oleh kepala perpustakaan. "
+                    "Hubungi kepala perpustakaan untuk informasi lebih lanjut.",
                     "danger",
                 )
                 return redirect(url_for("auth.login"))
             if not user.is_active_db:
-                flash("Akun Anda dinonaktifkan. Hubungi operator perpustakaan.", "danger")
+                flash("Akun Anda dinonaktifkan. Hubungi kepala perpustakaan.", "danger")
                 return redirect(url_for("auth.login"))
             login_user(user)
             flash(f"Selamat datang, {user.nama_lengkap}!", "success")
             return redirect(url_for("dashboard.index"))
-        flash("Username atau password salah.", "danger")
+        flash("Username/NISN atau password salah.", "danger")
 
     return render_template("auth/login.html")
 
@@ -161,11 +139,11 @@ def logout():
 
 
 # ------------------------------------------------------------------
-# Manajemen pengguna (khusus operator) - membuat akun staf/operator
+# Manajemen pengguna (khusus kepala perpustakaan) - membuat akun staf/kepala perpustakaan
 # ------------------------------------------------------------------
 @auth_bp.route("/pengguna")
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def daftar_pengguna():
     pengguna = User.query.order_by(User.created_at.desc()).all()
     return render_template("auth/daftar_pengguna.html", pengguna=pengguna)
@@ -173,7 +151,7 @@ def daftar_pengguna():
 
 @auth_bp.route("/pengguna/tambah", methods=["GET", "POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def tambah_pengguna():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -181,13 +159,20 @@ def tambah_pengguna():
         nama_lengkap = request.form.get("nama_lengkap", "").strip()
         password = request.form.get("password", "")
         role = request.form.get("role", "staf")
+        nisn_input = request.form.get("nisn", "")
 
-        if role not in ("user", "staf", "operator"):
+        if role not in ("mahasiswa", "staf", "kepala_perpustakaan"):
             flash("Role tidak valid.", "danger")
             return redirect(url_for("auth.tambah_pengguna"))
 
         if len(password) < 6:
             flash("Password minimal 6 karakter.", "danger")
+            return redirect(url_for("auth.tambah_pengguna"))
+
+        # NISN wajib untuk mahasiswa, opsional untuk staf / kepala perpustakaan
+        nisn, err = validasi_nisn(nisn_input, wajib=(role == "mahasiswa"))
+        if err:
+            flash(err, "danger")
             return redirect(url_for("auth.tambah_pengguna"))
 
         if not _email_domain_valid(email):
@@ -205,23 +190,22 @@ def tambah_pengguna():
             flash("Email sudah digunakan pengguna lain.", "danger")
             return redirect(url_for("auth.tambah_pengguna"))
 
-        # Dibuat langsung oleh operator -> otomatis dianggap terverifikasi,
+        # Dibuat langsung oleh kepala perpustakaan -> otomatis dianggap terverifikasi,
         # tidak perlu melalui alur persetujuan seperti registrasi mandiri.
         user = User(
             username=username, email=email, nama_lengkap=nama_lengkap,
-            role=role, status_akun="disetujui",
+            nisn=nisn, role=role, status_akun="disetujui",
         )
         user.set_password(password)
         db.session.add(user)
         db.session.flush()
 
         # Kartu perpustakaan digital sekarang diterbitkan untuk SEMUA role
-        # (anggota, staf, maupun operator), bukan cuma anggota.
+        # (mahasiswa, staf, maupun kepala perpustakaan), bukan cuma mahasiswa.
         kartu = KartuAnggota(
             user_id=user.id,
-            nomor_kartu=_generate_nomor_kartu(role),
             tanggal_terbit=date.today(),
-            tanggal_kadaluarsa=date.today() + timedelta(days=365),
+            tanggal_kadaluarsa=date.today() + timedelta(days=current_app.config["MASA_BERLAKU_KARTU_HARI"]),
             status="aktif",
         )
         db.session.add(kartu)
@@ -235,7 +219,7 @@ def tambah_pengguna():
 
 @auth_bp.route("/pengguna/<int:user_id>/toggle-aktif", methods=["POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def toggle_aktif_pengguna(user_id):
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
@@ -250,10 +234,10 @@ def toggle_aktif_pengguna(user_id):
 
 @auth_bp.route("/pengguna/<int:user_id>/edit", methods=["GET", "POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def edit_pengguna(user_id):
     # Edit akun sendiri diarahkan ke halaman "Profil Saya" (self-service),
-    # supaya operator tidak bisa tanpa sadar mengubah role/status akunnya sendiri
+    # supaya kepala perpustakaan tidak bisa tanpa sadar mengubah role/status akunnya sendiri
     # lewat form manajemen pengguna ini.
     if user_id == current_user.id:
         flash("Gunakan halaman 'Profil Saya' untuk mengedit akun Anda sendiri.", "info")
@@ -268,14 +252,31 @@ def edit_pengguna(user_id):
         no_telepon = request.form.get("no_telepon", "").strip()
         alamat = request.form.get("alamat", "").strip()
         role = request.form.get("role", user.role)
+        nisn_input = request.form.get("nisn", "")
         password_baru = request.form.get("password", "")
+        password_baru2 = request.form.get("password2", "")
 
         if not all([username, email, nama_lengkap]):
             flash("Nama, username, dan email wajib diisi.", "danger")
             return redirect(url_for("auth.edit_pengguna", user_id=user.id))
 
-        if role not in ("user", "staf", "operator"):
+        # Reset password (opsional): harus valid & dikonfirmasi, supaya salah ketik
+        # tidak diam-diam menyimpan password yang tidak diketahui siapa pun.
+        if password_baru or password_baru2:
+            if len(password_baru) < 6:
+                flash("Password baru minimal 6 karakter.", "danger")
+                return redirect(url_for("auth.edit_pengguna", user_id=user.id))
+            if password_baru != password_baru2:
+                flash("Konfirmasi password baru tidak cocok.", "danger")
+                return redirect(url_for("auth.edit_pengguna", user_id=user.id))
+
+        if role not in ("mahasiswa", "staf", "kepala_perpustakaan"):
             flash("Role tidak valid.", "danger")
+            return redirect(url_for("auth.edit_pengguna", user_id=user.id))
+
+        nisn, err = validasi_nisn(nisn_input, wajib=(role == "mahasiswa"), abaikan_user_id=user.id)
+        if err:
+            flash(err, "danger")
             return redirect(url_for("auth.edit_pengguna", user_id=user.id))
 
         duplikat_username = User.query.filter(User.username == username, User.id != user.id).first()
@@ -289,11 +290,11 @@ def edit_pengguna(user_id):
             return redirect(url_for("auth.edit_pengguna", user_id=user.id))
 
         # Jika akun ini satu-satunya operator, jangan biarkan diturunkan rolenya
-        # dari sini (mencegah sistem kehilangan seluruh akses operator).
-        if user.is_operator and role != "operator":
-            jumlah_operator = User.query.filter_by(role="operator").count()
-            if jumlah_operator <= 1:
-                flash("Tidak bisa mengubah role: ini adalah satu-satunya akun operator yang tersisa.", "warning")
+        # dari sini (mencegah sistem kehilangan seluruh akses kepala perpustakaan).
+        if user.is_kepala and role != "kepala_perpustakaan":
+            jumlah_kepala = User.query.filter_by(role="kepala_perpustakaan").count()
+            if jumlah_kepala <= 1:
+                flash("Tidak bisa mengubah role: ini adalah satu-satunya akun kepala perpustakaan yang tersisa.", "warning")
                 return redirect(url_for("auth.edit_pengguna", user_id=user.id))
 
         user.username = username
@@ -301,6 +302,7 @@ def edit_pengguna(user_id):
         user.nama_lengkap = nama_lengkap
         user.no_telepon = no_telepon or None
         user.alamat = alamat or None
+        user.nisn = nisn
         user.role = role
 
         if password_baru:
@@ -310,7 +312,10 @@ def edit_pengguna(user_id):
         _terbitkan_kartu_jika_belum_ada(user)
 
         db.session.commit()
-        flash(f"Akun '{user.username}' berhasil diperbarui.", "success")
+        if password_baru:
+            flash(f"Akun '{user.username}' berhasil diperbarui dan password-nya sudah direset.", "success")
+        else:
+            flash(f"Akun '{user.username}' berhasil diperbarui.", "success")
         return redirect(url_for("auth.daftar_pengguna"))
 
     return render_template("auth/edit_pengguna.html", u=user)
@@ -318,7 +323,7 @@ def edit_pengguna(user_id):
 
 @auth_bp.route("/pengguna/<int:user_id>/hapus", methods=["POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def hapus_pengguna(user_id):
     user = User.query.get_or_404(user_id)
 
@@ -326,10 +331,10 @@ def hapus_pengguna(user_id):
         flash("Anda tidak bisa menghapus akun sendiri.", "warning")
         return redirect(url_for("auth.daftar_pengguna"))
 
-    if user.is_operator:
-        jumlah_operator = User.query.filter_by(role="operator").count()
-        if jumlah_operator <= 1:
-            flash("Tidak bisa menghapus: ini adalah satu-satunya akun operator yang tersisa.", "warning")
+    if user.is_kepala:
+        jumlah_kepala = User.query.filter_by(role="kepala_perpustakaan").count()
+        if jumlah_kepala <= 1:
+            flash("Tidak bisa menghapus: ini adalah satu-satunya akun kepala perpustakaan yang tersisa.", "warning")
             return redirect(url_for("auth.daftar_pengguna"))
 
     # Cegah hapus akun yang masih punya pengajuan/peminjaman AKTIF —
@@ -360,13 +365,13 @@ def hapus_pengguna(user_id):
 
 
 # ------------------------------------------------------------------
-# PROFIL SAYA (self-service, khusus staf & operator) - edit data diri
+# PROFIL SAYA (self-service, khusus staf & kepala perpustakaan) - edit data diri
 # sendiri & ganti password. Tidak boleh mengubah role/status akun sendiri
-# lewat sini (itu tetap lewat menu manajemen pengguna, oleh operator lain).
+# lewat sini (itu tetap lewat menu manajemen pengguna, oleh kepala perpustakaan lain).
 # ------------------------------------------------------------------
 @auth_bp.route("/profil", methods=["GET", "POST"])
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def profil():
     if request.method == "POST":
         email = request.form.get("email", "").strip()
@@ -387,8 +392,10 @@ def profil():
             return redirect(url_for("auth.profil"))
 
         # ganti password bersifat opsional, tapi kalau diisi harus lengkap & valid
-        if password_baru or password_baru2 or password_lama:
-            if not current_user.check_password(password_lama):
+        # Kepala perpustakaan (role tertinggi) tidak perlu memasukkan password lama;
+        # staf tetap wajib memasukkannya.
+        if password_baru or password_baru2 or (password_lama and not current_user.is_kepala):
+            if not current_user.is_kepala and not current_user.check_password(password_lama):
                 flash("Password lama yang dimasukkan salah.", "danger")
                 return redirect(url_for("auth.profil"))
             if password_baru != password_baru2:
@@ -414,16 +421,16 @@ def profil():
 
 
 # ------------------------------------------------------------------
-# PERSETUJUAN AKUN ANGGOTA BARU (khusus operator)
+# PERSETUJUAN AKUN ANGGOTA BARU (khusus kepala perpustakaan)
 # Registrasi mandiri lewat /auth/register masuk sini dulu sebelum
 # bisa login. Tidak mengubah/menyentuh proses tambah_pengguna() di atas.
 # ------------------------------------------------------------------
 @auth_bp.route("/pengguna/persetujuan")
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def daftar_persetujuan():
     pending = (
-        User.query.filter_by(role="user", status_akun="pending")
+        User.query.filter_by(role="mahasiswa", status_akun="pending")
         .order_by(User.created_at.asc())
         .all()
     )
@@ -432,7 +439,7 @@ def daftar_persetujuan():
 
 @auth_bp.route("/pengguna/<int:user_id>/setujui", methods=["POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def setujui_pengguna(user_id):
     user = User.query.get_or_404(user_id)
 
@@ -447,9 +454,8 @@ def setujui_pengguna(user_id):
     if not user.kartu:
         kartu = KartuAnggota(
             user_id=user.id,
-            nomor_kartu=_generate_nomor_kartu(user.role),
             tanggal_terbit=date.today(),
-            tanggal_kadaluarsa=date.today() + timedelta(days=365),
+            tanggal_kadaluarsa=date.today() + timedelta(days=current_app.config["MASA_BERLAKU_KARTU_HARI"]),
             status="aktif",
         )
         db.session.add(kartu)
@@ -461,7 +467,7 @@ def setujui_pengguna(user_id):
 
 @auth_bp.route("/pengguna/<int:user_id>/tolak", methods=["POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def tolak_pengguna(user_id):
     user = User.query.get_or_404(user_id)
 

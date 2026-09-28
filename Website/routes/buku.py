@@ -66,12 +66,16 @@ def daftar_buku():
     # untuk anggota: buku mana saja yang sudah punya pengajuan/pinjaman aktif,
     # dihitung sekali di sini (bukan per-kartu) supaya tidak membebani query.
     buku_id_aktif = set()
-    if current_user.is_anggota:
+    maks_pinjam = current_app.config["MAKS_PINJAM_PER_USER"]
+    jumlah_aktif = 0
+    if current_user.is_mahasiswa:
         aktif = Peminjaman.query.filter(
             Peminjaman.user_id == current_user.id,
             Peminjaman.status.in_(["diajukan", "dipinjam"]),
         ).all()
         buku_id_aktif = {p.buku_id for p in aktif}
+        jumlah_aktif = len(aktif)
+    kuota_penuh = jumlah_aktif >= maks_pinjam
 
     # Kelompokkan buku per kategori agar tampilannya seperti rak perpustakaan
     # sungguhan: tiap rak (kategori) berisi buku-bukunya sendiri, rapi dan mudah dipahami.
@@ -88,6 +92,7 @@ def daftar_buku():
         "buku/daftar.html", daftar=daftar, kelompok=kelompok,
         kategori_list=kategori_list, q=q, kategori_id=kategori_id,
         buku_id_aktif=buku_id_aktif,
+        kuota_penuh=kuota_penuh, jumlah_aktif=jumlah_aktif, maks_pinjam=maks_pinjam,
     )
 
 
@@ -97,22 +102,27 @@ def detail_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
 
     pengajuan_aktif = None
-    if current_user.is_anggota:
+    if current_user.is_mahasiswa:
         pengajuan_aktif = Peminjaman.query.filter(
             Peminjaman.user_id == current_user.id,
             Peminjaman.buku_id == buku.id,
             Peminjaman.status.in_(["diajukan", "dipinjam"]),
         ).first()
 
-    return render_template("buku/detail.html", buku=buku, pengajuan_aktif=pengajuan_aktif)
+    maks_pinjam = current_app.config["MAKS_PINJAM_PER_USER"]
+    jumlah_aktif = current_user.jumlah_pinjaman_aktif if current_user.is_mahasiswa else 0
+    return render_template(
+        "buku/detail.html", buku=buku, pengajuan_aktif=pengajuan_aktif,
+        kuota_penuh=jumlah_aktif >= maks_pinjam, jumlah_aktif=jumlah_aktif, maks_pinjam=maks_pinjam,
+    )
 
 
 # ------------------------------------------------------------------
-# TAMBAH / EDIT / HAPUS BUKU (khusus staf & operator)
+# TAMBAH / EDIT / HAPUS BUKU (khusus staf & kepala perpustakaan)
 # ------------------------------------------------------------------
 @buku_bp.route("/tambah", methods=["GET", "POST"])
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def tambah_buku():
     if request.method == "POST":
         judul = request.form.get("judul", "").strip()
@@ -146,7 +156,7 @@ def tambah_buku():
 
 @buku_bp.route("/<int:buku_id>/edit", methods=["GET", "POST"])
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def edit_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
 
@@ -174,7 +184,7 @@ def edit_buku(buku_id):
 
 @buku_bp.route("/<int:buku_id>/hapus", methods=["POST"])
 @login_required
-@role_required("operator")
+@role_required("kepala_perpustakaan")
 def hapus_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
 
@@ -207,7 +217,7 @@ def hapus_buku(buku_id):
 # ------------------------------------------------------------------
 @buku_bp.route("/kategori", methods=["GET", "POST"])
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def kategori():
     if request.method == "POST":
         nama = request.form.get("nama_kategori", "").strip()
@@ -223,12 +233,34 @@ def kategori():
     return render_template("buku/kategori.html", kategori_list=kategori_list)
 
 
+@buku_bp.route("/kategori/<int:kategori_id>/hapus", methods=["POST"])
+@login_required
+@role_required("staf", "kepala_perpustakaan")
+def hapus_kategori(kategori_id):
+    """Hapus kategori. Buku di dalamnya TIDAK ikut terhapus: buku tsb menjadi
+    'Tanpa Kategori' (kategori_id di-set NULL)."""
+    kat = Kategori.query.get_or_404(kategori_id)
+    nama = kat.nama_kategori
+    jumlah_buku = len(kat.buku_list)
+
+    for b in list(kat.buku_list):
+        b.kategori_id = None
+    db.session.delete(kat)
+    db.session.commit()
+
+    pesan = f"Kategori '{nama}' berhasil dihapus."
+    if jumlah_buku:
+        pesan += f" {jumlah_buku} buku di dalamnya kini berstatus 'Tanpa Kategori'."
+    flash(pesan, "success")
+    return redirect(url_for("buku.kategori"))
+
+
 # ------------------------------------------------------------------
-# IMPORT / EXPORT EXCEL (khusus staf & operator)
+# IMPORT / EXPORT EXCEL (khusus staf & kepala perpustakaan)
 # ------------------------------------------------------------------
 @buku_bp.route("/template-excel")
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def download_template_excel():
     buffer = buat_template_excel()
     return send_file(
@@ -241,7 +273,7 @@ def download_template_excel():
 
 @buku_bp.route("/import-excel", methods=["GET", "POST"])
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def import_excel():
     if request.method == "POST":
         file = request.files.get("file_excel")

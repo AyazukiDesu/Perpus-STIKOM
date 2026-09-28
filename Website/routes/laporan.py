@@ -10,7 +10,7 @@ laporan_bp = Blueprint("laporan", __name__, url_prefix="/laporan")
 
 @laporan_bp.route("/populer")
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def buku_populer():
     hasil = (
         db.session.query(Buku, db.func.count(Peminjaman.id).label("jumlah_pinjam"))
@@ -25,7 +25,7 @@ def buku_populer():
 
 @laporan_bp.route("/tidak-populer")
 @login_required
-@role_required("staf", "operator")
+@role_required("staf", "kepala_perpustakaan")
 def buku_tidak_populer():
     # Buku yang tidak pernah dipinjam sama sekali
     subq = db.session.query(Peminjaman.buku_id).distinct().subquery()

@@ -5,7 +5,7 @@ from flask_login import current_user
 
 def role_required(*roles):
     """Decorator untuk membatasi akses route berdasarkan role.
-    Contoh: @role_required('operator') atau @role_required('staf', 'operator')
+    Contoh: @role_required('kepala_perpustakaan') atau @role_required('staf', 'kepala_perpustakaan')
     """
     def decorator(f):
         @wraps(f)

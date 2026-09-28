@@ -2,16 +2,22 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block extra_head %}
-{% if not current_user.is_anggota %}
+{% if not current_user.is_mahasiswa %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 {% endif %}
 {% endblock %}
 
 {% block content %}
-<h2>Halo, {{ current_user.nama_lengkap }}</h2>
-<p style="color:var(--muted);">Hari ini: {{ today.strftime('%d-%m-%Y') }}</p>
+<div class="hero">
+  <div class="hero-text">
+    <span class="hero-sapa" id="heroSapa">Selamat datang</span>
+    <h2 class="hero-nama">{{ current_user.nama_lengkap }}</h2>
+    <p class="hero-info"><span id="heroTanggal">{{ today.strftime('%d-%m-%Y') }}</span> · {{ current_user.role_label }}</p>
+  </div>
+  <svg class="hero-deco" aria-hidden="true"><use href="#i-book-open"></use></svg>
+</div>
 
-{% if current_user.is_anggota %}
+{% if current_user.is_mahasiswa %}
   {% if jumlah_terlambat_saya %}
     <div class="flash flash-danger" style="position:static;">
       Anda memiliki {{ jumlah_terlambat_saya }} buku yang sudah <strong>lewat batas waktu</strong> pengembalian. Segera kembalikan ke perpustakaan.
@@ -24,17 +30,23 @@
   {% endif %}
 
   <div class="grid-3">
-    <div class="stat-box"><div class="angka">{{ jumlah_sedang_dipinjam }}</div><div class="label">Sedang Dipinjam</div></div>
-    <div class="stat-box"><div class="angka">{{ jumlah_pernah_dipinjam }}</div><div class="label">Total Pernah Dipinjam</div></div>
     <div class="stat-box">
+      <span class="stat-icon tone-maroon"><svg class="icon"><use href="#i-clipboard"></use></svg></span>
+      <div class="angka">{{ jumlah_kuota_terpakai }}/{{ maks_pinjam }}</div>
+      <div class="label">Kuota Pinjam Terpakai</div>
+    </div>
+    <div class="stat-box"><span class="stat-icon tone-blue"><svg class="icon"><use href="#i-book-open"></use></svg></span><div class="angka">{{ jumlah_sedang_dipinjam }}</div><div class="label">Sedang Dipinjam</div></div>
+    <div class="stat-box"><span class="stat-icon tone-gold"><svg class="icon"><use href="#i-clock"></use></svg></span><div class="angka">{{ jumlah_pernah_dipinjam }}</div><div class="label">Total Pernah Dipinjam</div></div>
+    <div class="stat-box">
+      <span class="stat-icon tone-green"><svg class="icon"><use href="#i-id-card"></use></svg></span>
       <div class="angka" style="font-size:1.15rem;">
         {% if kartu_saya %}
-          {% if kartu_saya.status == 'aktif' %}<span class="badge badge-success">Aktif</span>{% else %}<span class="badge badge-danger">Nonaktif</span>{% endif %}
+          {% if kartu_saya.is_kadaluarsa %}<span class="badge badge-danger">Kadaluarsa</span>{% elif kartu_saya.status == 'aktif' %}<span class="badge badge-success">Aktif</span>{% else %}<span class="badge badge-danger">Nonaktif</span>{% endif %}
         {% else %}
           <span class="badge badge-warning">Belum Terbit</span>
         {% endif %}
       </div>
-      <div class="label">Status Kartu Anggota</div>
+      <div class="label">Status Kartu Perpustakaan</div>
     </div>
   </div>
 
@@ -79,7 +91,10 @@
               {% if b.sampul_path %}
                 <img src="{{ url_for('static', filename=b.sampul_path.replace('static/', '', 1)) }}" alt="Sampul {{ b.judul }}">
               {% else %}
-                <div class="buku-cover-placeholder">Tidak ada sampul</div>
+                <div class="buku-cover-placeholder cover-v{{ b.id % 4 }}">
+                  <span class="cover-inisial">{{ (b.judul or '?')[:1]|upper }}</span>
+                  <span class="cover-ket">Tanpa sampul</span>
+                </div>
               {% endif %}
               <span class="buku-stok-badge">{{ jumlah }}x dipinjam</span>
             </a>
@@ -106,13 +121,13 @@
 {% else %}
   {# ================= DASHBOARD STAF & OPERATOR ================= #}
   <div class="grid-3">
-    <div class="stat-box"><div class="angka">{{ total_buku }}</div><div class="label">Judul Buku</div></div>
-    <div class="stat-box"><div class="angka">{{ total_stok }}</div><div class="label">Total Stok</div></div>
-    <div class="stat-box"><div class="angka">{{ sedang_dipinjam }}</div><div class="label">Sedang Dipinjam</div></div>
-    <div class="stat-box"><div class="angka">{{ terlambat }}</div><div class="label">Terlambat</div></div>
-    {% if current_user.is_operator %}
-    <div class="stat-box"><div class="angka">{{ total_anggota }}</div><div class="label">Total Anggota</div></div>
-    <div class="stat-box"><div class="angka">{{ menunggu_persetujuan }}</div><div class="label">Menunggu Persetujuan</div></div>
+    <div class="stat-box"><span class="stat-icon tone-maroon"><svg class="icon"><use href="#i-book"></use></svg></span><div class="angka">{{ total_buku }}</div><div class="label">Judul Buku</div></div>
+    <div class="stat-box"><span class="stat-icon tone-gold"><svg class="icon"><use href="#i-folder"></use></svg></span><div class="angka">{{ total_stok }}</div><div class="label">Total Stok</div></div>
+    <div class="stat-box"><span class="stat-icon tone-blue"><svg class="icon"><use href="#i-book-open"></use></svg></span><div class="angka">{{ sedang_dipinjam }}</div><div class="label">Sedang Dipinjam</div></div>
+    <div class="stat-box"><span class="stat-icon tone-red"><svg class="icon"><use href="#i-alert"></use></svg></span><div class="angka">{{ terlambat }}</div><div class="label">Terlambat</div></div>
+    {% if current_user.is_kepala %}
+    <div class="stat-box"><span class="stat-icon tone-green"><svg class="icon"><use href="#i-users"></use></svg></span><div class="angka">{{ total_anggota }}</div><div class="label">Total Mahasiswa</div></div>
+    <div class="stat-box"><span class="stat-icon tone-amber"><svg class="icon"><use href="#i-clock"></use></svg></span><div class="angka">{{ menunggu_persetujuan }}</div><div class="label">Menunggu Persetujuan</div></div>
     {% endif %}
   </div>
 
@@ -198,6 +213,18 @@
 
 {% block scripts %}
 <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var jam = new Date().getHours();
+    var sapa = jam < 11 ? 'Selamat pagi' : jam < 15 ? 'Selamat siang' : jam < 18 ? 'Selamat sore' : 'Selamat malam';
+    var elSapa = document.getElementById('heroSapa');
+    if (elSapa) elSapa.textContent = sapa + ',';
+    var elTgl = document.getElementById('heroTanggal');
+    if (elTgl) {
+      try { elTgl.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) {}
+    }
+  });
+</script>
+<script>
   // Animasi hitung-naik utk angka statistik (mis. 128 dianimasikan dari 0 -> 128)
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.stat-box .angka').forEach(function (el) {
@@ -218,101 +245,114 @@
     });
   });
 </script>
-{% if not current_user.is_anggota %}
+{% if not current_user.is_mahasiswa %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof Chart === 'undefined') return; // CDN gagal dimuat (mis. tidak ada internet) -> lewati grafik, dashboard lain tetap jalan
 
-    var stylesTema = getComputedStyle(document.documentElement);
-    var warnaPrimer = stylesTema.getPropertyValue('--primary').trim();
-    var warnaAksen = stylesTema.getPropertyValue('--accent').trim();
-    var warnaTeks = stylesTema.getPropertyValue('--text').trim();
-    var warnaGaris = stylesTema.getPropertyValue('--border').trim();
-    var paletteKategori = [
-      warnaPrimer, warnaAksen, stylesTema.getPropertyValue('--info').trim(),
-      stylesTema.getPropertyValue('--success').trim(), stylesTema.getPropertyValue('--warning').trim(),
-      stylesTema.getPropertyValue('--primary-light').trim(), stylesTema.getPropertyValue('--danger').trim(),
-    ];
+    var dataBulanan = { labels: {{ labels_grafik_bulanan|tojson }}, data: {{ data_grafik_bulanan|tojson }} };
+    var dataTopBuku = { labels: {{ labels_grafik_top_buku|tojson }}, data: {{ data_grafik_top_buku|tojson }} };
+    var dataKategori = { labels: {{ labels_grafik_kategori|tojson }}, data: {{ data_grafik_kategori|tojson }} };
+    var grafikAktif = [];
 
-    Chart.defaults.color = warnaTeks;
-    Chart.defaults.borderColor = warnaGaris;
-    Chart.defaults.font.family = "Inter, 'Segoe UI', Roboto, Arial, sans-serif";
-
-    // ---- Grafik 1: tren peminjaman bulanan (line) ----
-    var elBulanan = document.getElementById('grafikBulanan');
-    if (elBulanan) {
-      new Chart(elBulanan, {
-        type: 'line',
-        data: {
-          labels: {{ labels_grafik_bulanan|tojson }},
-          datasets: [{
-            label: 'Jumlah Peminjaman',
-            data: {{ data_grafik_bulanan|tojson }},
-            borderColor: warnaPrimer,
-            backgroundColor: warnaPrimer + '33',
-            tension: 0.3,
-            fill: true,
-            pointRadius: 4,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-        }
-      });
+    function cssVar(nama) {
+      return getComputedStyle(document.documentElement).getPropertyValue(nama).trim();
     }
 
-    // ---- Grafik 2: buku terpopuler (bar horizontal) ----
-    var elTopBuku = document.getElementById('grafikTopBuku');
-    if (elTopBuku) {
-      var labelTop = {{ labels_grafik_top_buku|tojson }};
-      new Chart(elTopBuku, {
-        type: 'bar',
-        data: {
-          labels: labelTop,
-          datasets: [{
-            label: 'Kali Dipinjam',
-            data: {{ data_grafik_top_buku|tojson }},
-            backgroundColor: warnaAksen,
-            borderRadius: 5,
-          }]
-        },
-        options: {
-          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
-        }
-      });
-      if (labelTop.length === 0 && elTopBuku.parentElement) {
-        elTopBuku.parentElement.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:var(--muted);font-size:0.85rem;">Belum ada data peminjaman.</p>');
+    function tambahPesanKosong(canvas, teks) {
+      var wrap = canvas.parentElement;
+      if (!wrap) return;
+      var lama = wrap.querySelector('.chart-kosong');
+      if (lama) lama.remove();
+      wrap.insertAdjacentHTML('beforeend', '<p class="chart-kosong" style="text-align:center;color:var(--muted);font-size:0.85rem;">' + teks + '</p>');
+    }
+
+    // Gambar semua grafik memakai warna tema yang sedang aktif.
+    // Dipanggil saat halaman dimuat DAN setiap kali mode terang/gelap diganti,
+    // sehingga teks/garis grafik tidak pernah menyatu dengan latar kartu.
+    function gambarGrafik() {
+      grafikAktif.forEach(function (g) { g.destroy(); });
+      grafikAktif = [];
+
+      var warnaPrimer = cssVar('--primary');
+      var warnaAksen = cssVar('--accent');
+      var warnaTeks = cssVar('--chart-text');
+      var warnaGaris = cssVar('--chart-grid');
+      var warnaKartu = cssVar('--card-bg');
+      var paletteKategori = [
+        warnaPrimer, warnaAksen, cssVar('--info'), cssVar('--success'),
+        cssVar('--warning'), cssVar('--primary-light'), cssVar('--danger')
+      ];
+
+      Chart.defaults.color = warnaTeks;
+      Chart.defaults.borderColor = warnaGaris;
+      Chart.defaults.font.family = "Inter, 'Segoe UI', Roboto, Arial, sans-serif";
+
+      var skalaTeks = { ticks: { color: warnaTeks, precision: 0 }, grid: { color: warnaGaris }, beginAtZero: true };
+      var skalaLabel = { ticks: { color: warnaTeks }, grid: { color: warnaGaris } };
+
+      var elBulanan = document.getElementById('grafikBulanan');
+      if (elBulanan) {
+        grafikAktif.push(new Chart(elBulanan, {
+          type: 'line',
+          data: {
+            labels: dataBulanan.labels,
+            datasets: [{
+              label: 'Jumlah Peminjaman',
+              data: dataBulanan.data,
+              borderColor: warnaAksen,
+              backgroundColor: warnaAksen + '33',
+              pointBackgroundColor: warnaAksen,
+              tension: 0.35, fill: true, pointRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: skalaLabel, y: skalaTeks }
+          }
+        }));
+      }
+
+      var elTopBuku = document.getElementById('grafikTopBuku');
+      if (elTopBuku) {
+        grafikAktif.push(new Chart(elTopBuku, {
+          type: 'bar',
+          data: {
+            labels: dataTopBuku.labels,
+            datasets: [{ label: 'Kali Dipinjam', data: dataTopBuku.data, backgroundColor: warnaAksen, borderRadius: 6 }]
+          },
+          options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: skalaTeks, y: skalaLabel }
+          }
+        }));
+        if (dataTopBuku.labels.length === 0) tambahPesanKosong(elTopBuku, 'Belum ada data peminjaman.');
+      }
+
+      var elKategori = document.getElementById('grafikKategori');
+      if (elKategori) {
+        grafikAktif.push(new Chart(elKategori, {
+          type: 'doughnut',
+          data: {
+            labels: dataKategori.labels,
+            datasets: [{ data: dataKategori.data, backgroundColor: paletteKategori, borderColor: warnaKartu, borderWidth: 2 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: warnaTeks, boxWidth: 12, padding: 10 } } }
+          }
+        }));
+        if (dataKategori.labels.length === 0) tambahPesanKosong(elKategori, 'Belum ada buku berkategori.');
       }
     }
 
-    // ---- Grafik 3: distribusi kategori (donut) ----
-    var elKategori = document.getElementById('grafikKategori');
-    if (elKategori) {
-      var labelKategori = {{ labels_grafik_kategori|tojson }};
-      new Chart(elKategori, {
-        type: 'doughnut',
-        data: {
-          labels: labelKategori,
-          datasets: [{
-            data: {{ data_grafik_kategori|tojson }},
-            backgroundColor: paletteKategori,
-            borderColor: stylesTema.getPropertyValue('--card-bg').trim(),
-            borderWidth: 2,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } }
-        }
-      });
-      if (labelKategori.length === 0 && elKategori.parentElement) {
-        elKategori.parentElement.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:var(--muted);font-size:0.85rem;">Belum ada buku berkategori.</p>');
-      }
-    }
+    gambarGrafik();
+
+    // Gambar ulang grafik otomatis ketika tombol tema (terang/gelap) ditekan
+    new MutationObserver(function () { gambarGrafik(); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   });
 </script>
 {% endif %}

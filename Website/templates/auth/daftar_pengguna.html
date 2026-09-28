@@ -3,7 +3,7 @@
 {% block content %}
 <h2>Manajemen Pengguna</h2>
 <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
-  <a href="{{ url_for('auth.tambah_pengguna') }}" class="btn">+ Tambah Staf/Operator</a>
+  <a href="{{ url_for('auth.tambah_pengguna') }}" class="btn">+ Tambah Pengguna</a>
   <a href="{{ url_for('auth.daftar_persetujuan') }}" class="btn btn-accent">
     <svg class="icon"><use href="#i-user-check"></use></svg> Persetujuan Akun Baru
     {% if jumlah_pending_akun %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pending_akun }}</span>{% endif %}
@@ -14,15 +14,16 @@
   <div class="table-scroll">
   <table>
     <thead>
-      <tr><th>Nama</th><th>Username</th><th>Email</th><th>Role</th><th>Persetujuan</th><th>Status</th><th>Aksi</th></tr>
+      <tr><th>Nama</th><th>Username</th><th>NISN</th><th>Email</th><th>Role</th><th>Persetujuan</th><th>Status</th><th>Aksi</th></tr>
     </thead>
     <tbody>
       {% for u in pengguna %}
       <tr>
         <td>{{ u.nama_lengkap }}</td>
         <td>{{ u.username }}</td>
+        <td>{{ u.nisn or '-' }}</td>
         <td>{{ u.email }}</td>
-        <td>{{ u.role }}</td>
+        <td>{{ u.role_label }}</td>
         <td>
           {% if u.status_akun == 'disetujui' %}<span class="badge badge-success">Disetujui</span>
           {% elif u.status_akun == 'pending' %}<span class="badge badge-warning">Menunggu</span>
@@ -36,8 +37,8 @@
           <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
             {% if u.id != current_user.id %}
               <a href="{{ url_for('auth.edit_pengguna', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-edit"></use></svg> Edit</a>
-              {% if u.role == 'user' %}
-                <a href="{{ url_for('kartu.kartu_anggota_lain', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-id-card"></use></svg> Kartu</a>
+              <a href="{{ url_for('kartu.kartu_anggota_lain', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-id-card"></use></svg> Kartu</a>
+              {% if u.role == 'mahasiswa' %}
                 <a href="{{ url_for('peminjaman.riwayat_anggota', user_id=u.id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-clock"></use></svg> Riwayat</a>
               {% endif %}
               <form method="POST" action="{{ url_for('auth.toggle_aktif_pengguna', user_id=u.id) }}" style="display:inline;">
@@ -47,7 +48,7 @@
               </form>
               <form method="POST" action="{{ url_for('auth.hapus_pengguna', user_id=u.id) }}" style="display:inline;"
                     onsubmit="return confirm('Hapus akun &quot;' + {{ u.username|tojson }} + '&quot; secara permanen? Seluruh riwayat peminjaman miliknya juga akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.');">
-                <button class="btn btn-sm btn-danger" type="submit"><svg class="icon"><use href="#i-trash"></use></svg> Hapus</button>
+                <button class="btn btn-sm btn-danger btn-icon" type="submit" title="Hapus" aria-label="Hapus"><svg class="icon"><use href="#i-trash"></use></svg></button>
               </form>
             {% else %}
               <span class="page-sub" style="font-size:0.78rem;">Akun Anda sendiri — edit lewat Profil Saya</span>

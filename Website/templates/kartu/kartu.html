@@ -3,21 +3,24 @@
 {% block content %}
 <div class="page-head">
   <h2><svg class="icon"><use href="#i-id-card"></use></svg> Kartu Perpustakaan Digital</h2>
-  {% if anggota.id != current_user.id %}<p class="page-sub">Milik: {{ anggota.nama_lengkap }} ({{ anggota.role }})</p>{% endif %}
+  {% if anggota.id != current_user.id %}<p class="page-sub">Milik: {{ anggota.nama_lengkap }} ({{ anggota.role_label }})</p>{% endif %}
 </div>
 
-<div class="kartu-anggota {{ 'kartu-role-staf' if anggota.role == 'staf' else ('kartu-role-operator' if anggota.role == 'operator' else '') }}">
-  <span class="role-pita">{{ 'Anggota' if anggota.role == 'user' else anggota.role }}</span>
+<div class="kartu-anggota {{ 'kartu-role-staf' if anggota.role == 'staf' else ('kartu-role-kepala' if anggota.role == 'kepala_perpustakaan' else '') }}">
+  <span class="role-pita">{{ anggota.role_label }}</span>
   <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" class="logo-kecil">
   <div class="label">Kartu Perpustakaan STIKOM Kendari</div>
-  <div class="nomor">{{ kartu.nomor_kartu }}</div>
+  <div class="label" style="margin-top:0.4rem;">NISN</div>
+  <div class="nomor">{{ kartu.nisn or '-' }}</div>
   <div style="font-size:1.05rem; margin-bottom:0.5rem;">{{ anggota.nama_lengkap }}</div>
   <div style="font-size:0.8rem; opacity:0.85;">
     Terbit: {{ kartu.tanggal_terbit.strftime('%d-%m-%Y') }} &nbsp;|&nbsp;
     Berlaku s.d.: {{ kartu.tanggal_kadaluarsa.strftime('%d-%m-%Y') }}
   </div>
   <div style="margin-top:0.6rem;">
-    {% if kartu.status == 'aktif' %}
+    {% if kartu.is_kadaluarsa %}
+      <span class="badge badge-danger">Kadaluarsa</span>
+    {% elif kartu.status == 'aktif' %}
       <span class="badge badge-success">Aktif</span>
     {% else %}
       <span class="badge badge-danger">Nonaktif</span>
@@ -29,6 +32,9 @@
   {% if anggota.id == current_user.id %}
     <a href="{{ url_for('kartu.kartu_saya_cetak') }}" target="_blank" class="btn btn-accent"><svg class="icon"><use href="#i-download"></use></svg> Download Kartu (PDF)</a>
   {% else %}
+    {% if kartu.id and (current_user.is_staf or current_user.is_kepala) %}
+      <a href="{{ url_for('kartu.edit_kartu', kartu_id=kartu.id) }}" class="btn"><svg class="icon"><use href="#i-edit"></use></svg> Atur Kartu</a>
+    {% endif %}
     <a href="{{ url_for('kartu.kartu_anggota_lain_cetak', user_id=anggota.id) }}" target="_blank" class="btn btn-accent"><svg class="icon"><use href="#i-download"></use></svg> Download Kartu (PDF)</a>
   {% endif %}
 </div>

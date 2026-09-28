@@ -9,18 +9,21 @@
 </head>
 <body>
   <div class="cetak-page">
-    <div class="kartu-anggota {{ 'kartu-role-staf' if anggota.role == 'staf' else ('kartu-role-operator' if anggota.role == 'operator' else '') }}">
-      <span class="role-pita">{{ 'Anggota' if anggota.role == 'user' else anggota.role }}</span>
+    <div class="kartu-anggota {{ 'kartu-role-staf' if anggota.role == 'staf' else ('kartu-role-kepala' if anggota.role == 'kepala_perpustakaan' else '') }}">
+      <span class="role-pita">{{ anggota.role_label }}</span>
       <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" class="logo-kecil">
       <div class="label">Kartu Perpustakaan STIKOM Kendari</div>
-      <div class="nomor">{{ kartu.nomor_kartu }}</div>
+      <div class="label" style="margin-top:0.4rem;">NISN</div>
+      <div class="nomor">{{ kartu.nisn or '-' }}</div>
       <div style="font-size:1.05rem; margin-bottom:0.5rem;">{{ anggota.nama_lengkap }}</div>
       <div style="font-size:0.8rem; opacity:0.85;">
         Terbit: {{ kartu.tanggal_terbit.strftime('%d-%m-%Y') }} &nbsp;|&nbsp;
         Berlaku s.d.: {{ kartu.tanggal_kadaluarsa.strftime('%d-%m-%Y') }}
       </div>
       <div style="margin-top:0.6rem;">
-        {% if kartu.status == 'aktif' %}
+        {% if kartu.is_kadaluarsa %}
+          <span class="badge badge-danger">Kadaluarsa</span>
+        {% elif kartu.status == 'aktif' %}
           <span class="badge badge-success">Aktif</span>
         {% else %}
           <span class="badge badge-danger">Nonaktif</span>
