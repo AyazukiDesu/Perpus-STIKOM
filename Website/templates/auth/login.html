@@ -4,7 +4,7 @@
 <div class="card" style="max-width:400px; margin:2rem auto; text-align:center;">
   <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" style="width:80px; margin-bottom:0.6rem;">
   <h2 style="margin-top:0;">Login Perpustakaan</h2>
-  <form method="POST" style="text-align:left;">
+  <form method="POST" style="text-align:left;" data-loader="Memproses login...">
     <div class="form-group">
       <label>Username atau NIM</label>
       <input type="text" name="username" required autofocus autocomplete="username">

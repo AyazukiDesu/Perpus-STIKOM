@@ -22,7 +22,7 @@
 </head>
 {% set pakai_sidebar = current_user.is_authenticated and current_user.is_kepala %}
 <body class="{{ 'has-sidebar' if pakai_sidebar else '' }} {{ ('role-' ~ current_user.role) if current_user.is_authenticated else 'guest' }}">
-  {% set tampilkan_loader_awal = (request.endpoint in ['auth.register', 'auth.login']) %}
+  {% set tampilkan_loader_awal = (request.endpoint in ['auth.register', 'auth.login', 'buku.daftar_buku']) %}
   <div class="page-loader{{ '' if tampilkan_loader_awal else ' page-loader-hidden' }}" id="pageLoader">
     <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Memuat" class="page-loader-logo">
     <div class="page-loader-bar"></div>
@@ -283,24 +283,59 @@
       var loader = document.getElementById('pageLoader');
       if (!loader) return;
 
+      var teksLoader = loader.querySelector('.page-loader-text');
+      var PATH_BUKU = "{{ url_for('buku.daftar_buku') }}".replace(/\/+$/, '');
+
       function sembunyikanLoader() { loader.classList.add('page-loader-hidden'); }
-      function tampilkanLoader() { loader.classList.remove('page-loader-hidden'); }
+      function tampilkanLoader(teks) {
+        if (teksLoader) teksLoader.textContent = teks || 'Memuat...';
+        loader.classList.remove('page-loader-hidden');
+      }
 
       // Sembunyikan loader begitu halaman ini selesai dimuat (termasuk saat
       // dibuka dari cache back/forward browser, via event 'pageshow').
       window.addEventListener('load', sembunyikanLoader);
       window.addEventListener('pageshow', sembunyikanLoader);
       if (document.readyState === 'complete') sembunyikanLoader();
+      // Cadangan: loader awal jangan menutupi halaman terlalu lama bila ada
+      // gambar/font yang lambat dimuat.
+      setTimeout(sembunyikanLoader, 8000);
 
-      // Tampilkan loader HANYA saat menuju halaman registrasi (bukan di
-      // setiap perpindahan halaman) - link ditandai class "js-nav-loader".
+      function klikBiasa(e) {
+        return !(e.defaultPrevented || e.button !== 0 ||
+                 e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
+      }
+
+      // Link bertanda class "js-nav-loader" (mis. ke halaman registrasi/login).
       document.querySelectorAll('a.js-nav-loader').forEach(function (a) {
         a.addEventListener('click', function (e) {
-          if (e.defaultPrevented || e.button !== 0) return;
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          if (!klikBiasa(e)) return;
           if (a.target && a.target !== '' && a.target !== '_self') return;
           tampilkanLoader();
         });
+      });
+
+      // Semua link ke halaman daftar buku (menu, bottom-nav, dashboard,
+      // filter kategori, paginasi) - query buku bisa lama, jadi beri tahu
+      // pengguna bahwa halaman sedang dimuat. Link unduhan (ekspor dsb.)
+      // tidak ikut karena path-nya berbeda.
+      document.addEventListener('click', function (e) {
+        if (!klikBiasa(e)) return;
+        var a = e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a || (a.target && a.target !== '_self')) return;
+        if (a.origin !== location.origin) return;
+        if (a.pathname.replace(/\/+$/, '') !== PATH_BUKU) return;
+        tampilkanLoader('Memuat data buku...');
+      });
+
+      // Form bertanda data-loader="teks" (login, registrasi, pencarian buku).
+      document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.hasAttribute || !form.hasAttribute('data-loader')) return;
+        // tunggu handler lain (mis. confirm) selesai; kalau dibatalkan, jangan tampilkan
+        setTimeout(function () {
+          if (!e.defaultPrevented) tampilkanLoader(form.getAttribute('data-loader'));
+        }, 0);
       });
     })();
 
