@@ -23,6 +23,10 @@ class Config:
 
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH_MB", "5")) * 1024 * 1024
 
+    # ---- NILAI AWAL PENGATURAN ----
+    # Nilai di bawah hanya cadangan/awal. Kepala perpustakaan bisa mengubahnya
+    # kapan saja lewat menu Pengaturan (tersimpan di tabel `pengaturan`).
+
     # Batas hari peminjaman default
     LAMA_PINJAM_HARI = 7
 
@@ -30,15 +34,27 @@ class Config:
     # (pengajuan yang menunggu persetujuan ikut dihitung).
     MAKS_PINJAM_PER_USER = 2
 
-    # Panjang NISN (Nomor Induk Siswa Nasional = 10 digit angka)
-    NISN_PANJANG = 10
+    # Panjang NIM (Nomor Induk Mahasiswa) yang diterima, dalam jumlah digit angka.
+    # Format NIM berbeda-beda antar kampus; sesuaikan rentang ini dengan format
+    # NIM kampus Anda (mis. jika NIM selalu 10 digit, isi keduanya dengan 10).
+    NIM_PANJANG_MIN = 8
+    NIM_PANJANG_MAKS = 12
 
     # Lama masa berlaku kartu perpustakaan (hari) saat diterbitkan / diperpanjang
     MASA_BERLAKU_KARTU_HARI = 365
 
     # Jumlah hari sebelum jatuh tempo untuk mulai menampilkan peringatan
-    # "akan jatuh tempo" ke mahasiswa & staf/kepala perpustakaan (menggantikan sistem denda).
+    # "akan jatuh tempo" ke mahasiswa & staf/kepala perpustakaan.
     PERINGATAN_JATUH_TEMPO_HARI = 3
+
+    # ---- DENDA KETERLAMBATAN ----
+    DENDA_PER_HARI = 1000        # Rp per hari keterlambatan
+    DENDA_MAKS = 0               # batas atas denda per buku (Rp); 0 = tanpa batas
+    MASA_TENGGANG_HARI = 0       # hari gratis setelah jatuh tempo sebelum denda dihitung
+    BLOKIR_JIKA_DENDA = 1        # 1 = mahasiswa dgn denda/keterlambatan tak bisa meminjam lagi
+
+    # ---- MANAJEMEN BUKU ----
+    MAKS_PERPANJANG = 2          # berapa kali jatuh tempo boleh diperpanjang
 
     # Daftar domain email yang dianggap valid saat registrasi/tambah pengguna
     # (tanpa perlu sistem verifikasi OTP). Silakan tambahkan domain kampus

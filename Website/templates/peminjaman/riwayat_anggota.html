@@ -17,7 +17,7 @@
   <table>
     <thead>
       <tr>
-        <th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th>
+        <th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Denda</th>
         {% if bisa_batalkan %}<th>Aksi</th>{% endif %}
       </tr>
     </thead>
@@ -36,12 +36,22 @@
           {% elif p.status == 'ditolak' %}
             <span class="badge badge-danger" title="{{ p.catatan or '' }}">Ditolak{{ ' — ' ~ p.catatan if p.catatan }}</span>
           {% elif p.is_telat %}
-            <span class="badge badge-danger">Terlambat</span>
+            <span class="badge badge-danger">Terlambat {{ p.hari_telat }} hari</span>
           {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
             <span class="badge badge-warning">⏰ Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
           {% else %}
             <span class="badge badge-info">Dipinjam</span>
           {% endif %}
+        </td>
+        <td>
+          {% set d = denda_sekarang(p) %}
+          {% if d > 0 %}
+            <strong>{{ d|rupiah }}</strong>
+            {% if p.status == 'dipinjam' %}<br><small style="color:var(--muted);">berjalan</small>
+            {% elif p.status_denda == 'belum_lunas' %}<br><span class="badge badge-danger">Belum lunas</span>
+            {% elif p.status_denda == 'lunas' %}<br><span class="badge badge-success">Lunas</span>
+            {% elif p.status_denda == 'dibebaskan' %}<br><span class="badge badge-info">Dibebaskan</span>{% endif %}
+          {% else %}-{% endif %}
         </td>
         {% if bisa_batalkan %}
         <td>
@@ -57,7 +67,7 @@
         {% endif %}
       </tr>
       {% else %}
-      <tr><td colspan="{{ 6 if bisa_batalkan else 5 }}">Belum ada riwayat peminjaman.</td></tr>
+      <tr><td colspan="{{ 7 if bisa_batalkan else 6 }}">Belum ada riwayat peminjaman.</td></tr>
       {% endfor %}
     </tbody>
   </table>

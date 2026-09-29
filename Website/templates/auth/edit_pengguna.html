@@ -34,8 +34,8 @@
       </select>
     </div>
     <div class="form-group">
-      <label>NISN <small style="color:var(--muted);">(wajib untuk mahasiswa, {{ config.NISN_PANJANG }} digit)</small></label>
-      <input type="text" name="nisn" value="{{ u.nisn or '' }}" inputmode="numeric" maxlength="{{ config.NISN_PANJANG }}" pattern="\d*">
+      <label>NIM <small style="color:var(--muted);">(wajib untuk mahasiswa, {{ config.NIM_PANJANG_MIN }}-{{ config.NIM_PANJANG_MAKS }} digit)</small></label>
+      <input type="text" name="nim" value="{{ u.nim or '' }}" inputmode="numeric" maxlength="{{ config.NIM_PANJANG_MAKS }}" pattern="\d*">
     </div>
     <div class="form-group">
       <label>Reset Password (opsional)</label>

@@ -1,0 +1,41 @@
+{% extends "layout/base.html" %}
+{% block title %}Buku Terlambat{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2><svg class="icon"><use href="#i-alert"></use></svg> Buku Terlambat Dikembalikan</h2>
+  <p class="page-sub">{{ daftar|length }} buku lewat jatuh tempo · denda berjalan <strong>{{ total_denda|rupiah }}</strong>. Urut dari yang paling lama terlambat.</p>
+</div>
+
+<div class="search-bar">
+  <a href="{{ url_for('laporan.ekspor_terlambat') }}" class="btn btn-ghost"><svg class="icon"><use href="#i-download"></use></svg> Ekspor Excel (untuk menghubungi peminjam)</a>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Mahasiswa</th><th>Buku</th><th>Jatuh Tempo</th><th>Hari Telat</th><th>Denda Berjalan</th><th>Aksi</th></tr></thead>
+    <tbody>
+      {% for p in daftar %}
+      <tr>
+        <td>{{ p.anggota.nama_lengkap }}<br><small style="color:var(--muted);">{{ p.anggota.no_telepon or p.anggota.email }}</small></td>
+        <td>{{ p.buku.judul }}</td>
+        <td>{{ p.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}</td>
+        <td><span class="badge badge-danger">{{ p.hari_telat }} hari</span></td>
+        <td><strong>{{ denda_sekarang(p)|rupiah }}</strong></td>
+        <td>
+          <form method="POST" action="{{ url_for('peminjaman.kembalikan_buku', peminjaman_id=p.id) }}"
+                onsubmit="return confirm('Konfirmasi pengembalian buku ini?');">
+            <button class="btn btn-sm btn-success" type="submit"><svg class="icon"><use href="#i-check"></use></svg> Kembalikan</button>
+            <button class="btn btn-sm btn-accent" type="submit" name="bayar" value="1">Kembalikan &amp; Lunasi</button>
+          </form>
+          <a href="{{ url_for('peminjaman.riwayat_anggota', user_id=p.user_id) }}" class="btn btn-sm"><svg class="icon"><use href="#i-clock"></use></svg> Riwayat</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Tidak ada buku yang terlambat. 🎉</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

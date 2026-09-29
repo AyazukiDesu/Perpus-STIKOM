@@ -29,6 +29,17 @@
     </div>
   {% endif %}
 
+  {% if denda_belum_lunas_saya %}
+    <div class="flash flash-danger no-auto-hide" style="position:static;">
+      Anda memiliki denda belum lunas <strong>{{ denda_belum_lunas_saya|rupiah }}</strong>. Silakan lunasi di perpustakaan{% if config.BLOKIR_JIKA_DENDA %} — peminjaman baru ditahan sampai denda lunas{% endif %}.
+    </div>
+  {% endif %}
+  {% if denda_berjalan_saya %}
+    <div class="flash flash-warning no-auto-hide" style="position:static;">
+      Denda keterlambatan berjalan <strong>{{ denda_berjalan_saya|rupiah }}</strong> dan bertambah {{ config.DENDA_PER_HARI|rupiah }} setiap hari sampai buku dikembalikan.
+    </div>
+  {% endif %}
+
   <div class="grid-3">
     <div class="stat-box">
       <span class="stat-icon tone-maroon"><svg class="icon"><use href="#i-clipboard"></use></svg></span>
@@ -48,6 +59,13 @@
       </div>
       <div class="label">Status Kartu Perpustakaan</div>
     </div>
+    {% if config.DENDA_PER_HARI > 0 %}
+    <div class="stat-box">
+      <span class="stat-icon {{ 'tone-red' if (denda_belum_lunas_saya or denda_berjalan_saya) else 'tone-green' }}"><svg class="icon"><use href="#i-coins"></use></svg></span>
+      <div class="angka angka-rp">{{ (denda_belum_lunas_saya + denda_berjalan_saya)|rupiah }}</div>
+      <div class="label">Total Denda Saya</div>
+    </div>
+    {% endif %}
   </div>
 
   <h3><svg class="icon"><use href="#i-book-open"></use></svg> Buku yang sedang Anda pinjam</h3>
@@ -64,7 +82,7 @@
             <td>{{ p.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}</td>
             <td>
               {% if p.is_telat %}
-                <span class="badge badge-danger">Terlambat</span>
+                <span class="badge badge-danger">Terlambat {{ p.hari_telat }} hari · {{ denda_sekarang(p)|rupiah }}</span>
               {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
                 <span class="badge badge-warning">Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
               {% else %}
@@ -125,6 +143,7 @@
     <div class="stat-box"><span class="stat-icon tone-gold"><svg class="icon"><use href="#i-folder"></use></svg></span><div class="angka">{{ total_stok }}</div><div class="label">Total Stok</div></div>
     <div class="stat-box"><span class="stat-icon tone-blue"><svg class="icon"><use href="#i-book-open"></use></svg></span><div class="angka">{{ sedang_dipinjam }}</div><div class="label">Sedang Dipinjam</div></div>
     <div class="stat-box"><span class="stat-icon tone-red"><svg class="icon"><use href="#i-alert"></use></svg></span><div class="angka">{{ terlambat }}</div><div class="label">Terlambat</div></div>
+    <a class="stat-box stat-link" href="{{ url_for('denda.daftar_denda') }}"><span class="stat-icon tone-amber"><svg class="icon"><use href="#i-coins"></use></svg></span><div class="angka angka-rp">{{ (denda_belum_lunas + denda_berjalan)|rupiah }}</div><div class="label">Denda (belum lunas + berjalan)</div></a>
     {% if current_user.is_kepala %}
     <div class="stat-box"><span class="stat-icon tone-green"><svg class="icon"><use href="#i-users"></use></svg></span><div class="angka">{{ total_anggota }}</div><div class="label">Total Mahasiswa</div></div>
     <div class="stat-box"><span class="stat-icon tone-amber"><svg class="icon"><use href="#i-clock"></use></svg></span><div class="angka">{{ menunggu_persetujuan }}</div><div class="label">Menunggu Persetujuan</div></div>
@@ -170,6 +189,10 @@
       <div class="card chart-card">
         <div class="chart-card-title">Buku Paling Sering Dipinjam</div>
         <div class="chart-wrap"><canvas id="grafikTopBuku"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-card-title">Mahasiswa Paling Sering Meminjam</div>
+        <div class="chart-wrap"><canvas id="grafikTopMahasiswa"></canvas></div>
       </div>
       <div class="card chart-card">
         <div class="chart-card-title">Distribusi Koleksi per Kategori</div>
@@ -252,6 +275,7 @@
 
     var dataBulanan = { labels: {{ labels_grafik_bulanan|tojson }}, data: {{ data_grafik_bulanan|tojson }} };
     var dataTopBuku = { labels: {{ labels_grafik_top_buku|tojson }}, data: {{ data_grafik_top_buku|tojson }} };
+    var dataTopMhs = { labels: {{ labels_grafik_top_mhs|tojson }}, data: {{ data_grafik_top_mhs|tojson }} };
     var dataKategori = { labels: {{ labels_grafik_kategori|tojson }}, data: {{ data_grafik_kategori|tojson }} };
     var grafikAktif = [];
 
@@ -329,6 +353,23 @@
           }
         }));
         if (dataTopBuku.labels.length === 0) tambahPesanKosong(elTopBuku, 'Belum ada data peminjaman.');
+      }
+
+      var elTopMhs = document.getElementById('grafikTopMahasiswa');
+      if (elTopMhs) {
+        grafikAktif.push(new Chart(elTopMhs, {
+          type: 'bar',
+          data: {
+            labels: dataTopMhs.labels,
+            datasets: [{ label: 'Buku Dipinjam', data: dataTopMhs.data, backgroundColor: warnaAksen, borderRadius: 6 }]
+          },
+          options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: skalaTeks, y: skalaLabel }
+          }
+        }));
+        if (dataTopMhs.labels.length === 0) tambahPesanKosong(elTopMhs, 'Belum ada data peminjaman.');
       }
 
       var elKategori = document.getElementById('grafikKategori');

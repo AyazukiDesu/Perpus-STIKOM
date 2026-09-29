@@ -1,0 +1,91 @@
+{% extends "layout/base.html" %}
+{% block title %}Denda Keterlambatan{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2><svg class="icon"><use href="#i-coins"></use></svg> Denda Keterlambatan</h2>
+  <p class="page-sub">
+    {% if config.DENDA_PER_HARI > 0 %}
+      Tarif saat ini <strong>{{ config.DENDA_PER_HARI|rupiah }}</strong> per hari{% if config.MASA_TENGGANG_HARI %}, tenggang {{ config.MASA_TENGGANG_HARI }} hari{% endif %}{% if config.DENDA_MAKS %}, maksimal {{ config.DENDA_MAKS|rupiah }} per buku{% endif %}.
+    {% else %}
+      Denda sedang <strong>dinonaktifkan</strong> (tarif Rp 0).
+    {% endif %}
+    {% if current_user.is_kepala %}<a href="{{ url_for('pengaturan.halaman') }}">Ubah pengaturan denda</a>{% endif %}
+  </p>
+</div>
+
+<div class="grid-3">
+  <div class="stat-box"><span class="stat-icon tone-red"><svg class="icon"><use href="#i-alert"></use></svg></span><div class="angka angka-rp">{{ total_belum_lunas|rupiah }}</div><div class="label">Belum Lunas</div></div>
+  <div class="stat-box"><span class="stat-icon tone-amber"><svg class="icon"><use href="#i-clock"></use></svg></span><div class="angka angka-rp">{{ total_berjalan|rupiah }}</div><div class="label">Berjalan (buku belum kembali)</div></div>
+  <div class="stat-box"><span class="stat-icon tone-green"><svg class="icon"><use href="#i-check-circle"></use></svg></span><div class="angka angka-rp">{{ terkumpul_bulan_ini|rupiah }}</div><div class="label">Terkumpul Bulan Ini</div></div>
+  <div class="stat-box"><span class="stat-icon tone-gold"><svg class="icon"><use href="#i-coins"></use></svg></span><div class="angka angka-rp">{{ terkumpul_total|rupiah }}</div><div class="label">Total Terkumpul</div></div>
+</div>
+
+<div class="search-bar" style="margin-top:1.2rem;">
+  <a href="{{ url_for('denda.daftar_denda', status='belum_lunas', q=q) }}" class="chip{{ ' chip-active' if status=='belum_lunas' else '' }}">Belum Lunas</a>
+  <a href="{{ url_for('denda.daftar_denda', status='berjalan', q=q) }}" class="chip{{ ' chip-active' if status=='berjalan' else '' }}">Berjalan</a>
+  <a href="{{ url_for('denda.daftar_denda', status='lunas', q=q) }}" class="chip{{ ' chip-active' if status=='lunas' else '' }}">Lunas</a>
+  <a href="{{ url_for('denda.daftar_denda', status='dibebaskan', q=q) }}" class="chip{{ ' chip-active' if status=='dibebaskan' else '' }}">Dibebaskan</a>
+  <a href="{{ url_for('denda.daftar_denda', status='semua', q=q) }}" class="chip{{ ' chip-active' if status=='semua' else '' }}">Semua</a>
+</div>
+
+<form method="GET" class="search-bar">
+  <input type="hidden" name="status" value="{{ status }}">
+  <input type="text" name="q" placeholder="Cari nama, username, NIM, atau judul buku..." value="{{ q }}">
+  <button class="btn" type="submit">Cari</button>
+  {% if q %}<a href="{{ url_for('denda.daftar_denda', status=status) }}" class="btn btn-ghost">Reset</a>{% endif %}
+  <a href="{{ url_for('denda.ekspor_denda', status=status if status != 'berjalan' else 'semua') }}" class="btn btn-ghost"><svg class="icon"><use href="#i-download"></use></svg> Ekspor Excel</a>
+</form>
+
+<div class="card">
+  <div class="table-scroll">
+  <table>
+    <thead>
+      <tr><th>Mahasiswa</th><th>Buku</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Hari Telat</th><th>Denda</th><th>Status</th><th>Aksi</th></tr>
+    </thead>
+    <tbody>
+      {% for p in daftar %}
+      <tr>
+        <td>{{ p.anggota.nama_lengkap }}<br><small style="color:var(--muted);">{{ p.anggota.nim or p.anggota.username }}</small></td>
+        <td>{{ p.buku.judul }}</td>
+        <td>{{ p.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}</td>
+        <td>{{ p.tanggal_kembali.strftime('%d-%m-%Y') if p.tanggal_kembali else '-' }}</td>
+        <td>{{ p.hari_telat }} hari</td>
+        <td><strong>{{ denda_sekarang(p)|rupiah }}</strong></td>
+        <td>
+          {% if p.status == 'dipinjam' %}<span class="badge badge-warning">Berjalan</span>
+          {% elif p.status_denda == 'belum_lunas' %}<span class="badge badge-danger">Belum Lunas</span>
+          {% elif p.status_denda == 'lunas' %}<span class="badge badge-success">Lunas {{ p.tanggal_denda_selesai.strftime('%d-%m-%Y') if p.tanggal_denda_selesai }}</span>
+          {% elif p.status_denda == 'dibebaskan' %}<span class="badge badge-info" title="{{ p.catatan_denda or '' }}">Dibebaskan</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if p.status == 'dipinjam' %}
+            <form method="POST" action="{{ url_for('peminjaman.kembalikan_buku', peminjaman_id=p.id) }}"
+                  onsubmit="return confirm('Konfirmasi pengembalian buku ini?');">
+              <button class="btn btn-sm btn-success" type="submit"><svg class="icon"><use href="#i-check"></use></svg> Kembalikan</button>
+              <button class="btn btn-sm btn-accent" type="submit" name="bayar" value="1">Kembalikan &amp; Lunasi</button>
+            </form>
+          {% elif p.status_denda == 'belum_lunas' %}
+            <form method="POST" action="{{ url_for('denda.lunasi', peminjaman_id=p.id) }}"
+                  onsubmit="return confirm('Catat denda {{ p.denda|rupiah }} sebagai LUNAS?');">
+              <button class="btn btn-sm btn-success" type="submit"><svg class="icon"><use href="#i-check-circle"></use></svg> Tandai Lunas</button>
+            </form>
+            {% if current_user.is_kepala %}
+            <form method="POST" action="{{ url_for('denda.bebaskan', peminjaman_id=p.id) }}"
+                  onsubmit="var c = prompt('Alasan membebaskan denda (opsional):'); if (c === null) return false; this.catatan.value = c; return true;">
+              <input type="hidden" name="catatan" value="">
+              <button class="btn btn-sm btn-warning" type="submit">Bebaskan</button>
+            </form>
+            {% endif %}
+          {% else %}-{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">Tidak ada data denda untuk filter ini.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if daftar %}<p class="excel-footnote" style="border-top:none;">{{ daftar|length }} data · total pada daftar ini <strong>{{ total_daftar|rupiah }}</strong></p>{% endif %}
+</div>
+{% endblock %}

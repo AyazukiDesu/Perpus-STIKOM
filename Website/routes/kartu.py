@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from extensions import db
 from models import User, KartuAnggota
 from utils.decorators import role_required
-from utils.kartu import validasi_nisn, terbitkan_kartu_jika_belum_ada as _terbitkan_kartu_jika_belum_ada
+from utils.kartu import validasi_nim, terbitkan_kartu_jika_belum_ada as _terbitkan_kartu_jika_belum_ada
 
 kartu_bp = Blueprint("kartu", __name__, url_prefix="/kartu")
 
@@ -14,7 +14,7 @@ kartu_bp = Blueprint("kartu", __name__, url_prefix="/kartu")
 # Kartu perpustakaan digital berlaku untuk SEMUA role (mahasiswa, staf, kepala
 # perpustakaan). Kalau akun lama belum pernah punya kartu (dibuat sebelum fitur
 # ini ada), kartunya diterbitkan otomatis saat pertama kali dibuka ("lazy create").
-# ID kartu = NISN pemilik.
+# ID kartu = NIM pemilik.
 @kartu_bp.route("/saya")
 @login_required
 def kartu_saya():
@@ -49,7 +49,7 @@ def kartu_anggota_lain_cetak(user_id):
 
 # ------------------------------------------------------------------
 # PENGATURAN KARTU PERPUSTAKAAN (staf & kepala perpustakaan)
-# Daftar semua kartu, ubah NISN / masa berlaku / status, perpanjang,
+# Daftar semua kartu, ubah NIM / masa berlaku / status, perpanjang,
 # aktifkan-nonaktifkan. Kartu nonaktif atau kadaluarsa tidak bisa
 # dipakai meminjam buku.
 # ------------------------------------------------------------------
@@ -64,7 +64,7 @@ def kelola_kartu():
     if q:
         like = f"%{q}%"
         query = query.filter(
-            db.or_(User.nama_lengkap.ilike(like), User.username.ilike(like), User.nisn.ilike(like))
+            db.or_(User.nama_lengkap.ilike(like), User.username.ilike(like), User.nim.ilike(like))
         )
     if filter_status == "aktif":
         query = query.filter(KartuAnggota.status == "aktif", KartuAnggota.tanggal_kadaluarsa >= date.today())
@@ -109,8 +109,8 @@ def edit_kartu(kartu_id):
     pemilik = kartu.pemilik
 
     if request.method == "POST":
-        nisn, err = validasi_nisn(
-            request.form.get("nisn", ""), wajib=pemilik.is_mahasiswa, abaikan_user_id=pemilik.id
+        nim, err = validasi_nim(
+            request.form.get("nim", ""), wajib=pemilik.is_mahasiswa, abaikan_user_id=pemilik.id
         )
         if err:
             flash(err, "danger")
@@ -131,7 +131,7 @@ def edit_kartu(kartu_id):
             flash("Status kartu tidak valid.", "danger")
             return redirect(url_for("kartu.edit_kartu", kartu_id=kartu.id))
 
-        pemilik.nisn = nisn
+        pemilik.nim = nim
         kartu.tanggal_terbit = terbit
         kartu.tanggal_kadaluarsa = kadaluarsa
         kartu.status = status

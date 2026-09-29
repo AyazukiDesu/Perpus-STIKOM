@@ -1,0 +1,58 @@
+{% extends "layout/base.html" %}
+{% block title %}Mahasiswa Paling Aktif Meminjam{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2><svg class="icon"><use href="#i-users"></use></svg> Mahasiswa Paling Sering Meminjam</h2>
+  <p class="page-sub">Peringkat berdasarkan jumlah buku yang dipinjam. Pengajuan yang belum disetujui atau ditolak tidak dihitung.</p>
+</div>
+
+<div class="search-bar" style="justify-content:space-between;">
+  <div class="kategori-chips" style="margin:0;">
+    {% for kunci, (label, _hari) in periode_opsi.items() %}
+      <a class="chip {{ 'chip-active' if kunci == periode else '' }}" href="{{ url_for('laporan.mahasiswa_aktif', periode=kunci) }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <a class="btn btn-sm btn-accent" href="{{ url_for('laporan.ekspor_mahasiswa_aktif', periode=periode) }}"><svg class="icon"><use href="#i-download"></use></svg> Ekspor Excel</a>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+  <table class="tabel-peringkat">
+    <thead>
+      <tr>
+        <th>Mahasiswa</th><th>NIM</th><th>Total Dipinjam</th>
+        <th>Judul Berbeda</th><th>Sedang Dipinjam</th><th>Terlambat</th><th>Terakhir Meminjam</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in hasil %}
+      <tr>
+        <td class="sel-nama">
+          <span class="no-peringkat {{ 'no-top' if b.peringkat <= 3 else '' }}">{{ b.peringkat }}</span>
+          <a href="{{ url_for('peminjaman.riwayat_anggota', user_id=b.user.id) }}">{{ b.user.nama_lengkap }}</a>
+        </td>
+        <td class="mono">{{ b.user.nim or b.user.username }}</td>
+        <td>
+          <span class="bar-angka">
+            <span class="bar" aria-hidden="true"><i style="width: {{ (b.total / total_terbanyak * 100)|round(0)|int }}%"></i></span>
+            <strong>{{ b.total }}</strong>
+          </span>
+        </td>
+        <td>{{ b.judul_unik }}</td>
+        <td>{{ b.sedang_dipinjam or '-' }}</td>
+        <td>{% if b.terlambat %}<span class="badge badge-danger">{{ b.terlambat }}x</span>{% else %}-{% endif %}</td>
+        <td>{{ b.terakhir.strftime('%d-%m-%Y') if b.terakhir else '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">Belum ada data peminjaman pada periode ini.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if hasil %}
+  <p class="excel-footnote" style="border-top:none; padding-left:0;">
+    Menampilkan {{ hasil|length }} mahasiswa teratas ({{ periode_opsi[periode][0]|lower }}). Peringkat yang sama berarti jumlah pinjam sama; nama diurutkan dari yang terbaru meminjam. Ekspor Excel memuat seluruh mahasiswa, bukan hanya 50 teratas.
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

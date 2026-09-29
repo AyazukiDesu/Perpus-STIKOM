@@ -2,7 +2,7 @@
 <html lang="id" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <meta name="theme-color" content="#3c1512">
   <title>{% block title %}Perpustakaan{% endblock %} - STIKOM Kendari</title>
   <link rel="icon" href="{{ url_for('static', filename='img/logo_stikom.png') }}">
@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
   <script>
     /* Terapkan tema tersimpan SEBELUM halaman dirender, agar tidak "berkedip" */
     (function () {
@@ -20,7 +21,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 {% set pakai_sidebar = current_user.is_authenticated and current_user.is_kepala %}
-<body class="{{ 'has-sidebar' if pakai_sidebar else '' }}">
+<body class="{{ 'has-sidebar' if pakai_sidebar else '' }} {{ ('role-' ~ current_user.role) if current_user.is_authenticated else 'guest' }}">
   {% set tampilkan_loader_awal = (request.endpoint in ['auth.register', 'auth.login']) %}
   <div class="page-loader{{ '' if tampilkan_loader_awal else ' page-loader-hidden' }}" id="pageLoader">
     <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Memuat" class="page-loader-logo">
@@ -52,6 +53,7 @@
             <a href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg>Daftar Buku</a>
             <a href="{{ url_for('buku.kategori') }}"><svg class="nav-icon"><use href="#i-folder"></use></svg>Kategori</a>
             <a href="{{ url_for('buku.import_excel') }}"><svg class="nav-icon"><use href="#i-upload"></use></svg>Import Excel</a>
+            <a href="{{ url_for('buku.ekspor_buku') }}"><svg class="nav-icon"><use href="#i-download"></use></svg>Ekspor Excel</a>
           </div>
         </div>
 
@@ -63,13 +65,18 @@
           <span class="side-link-main"><svg class="nav-icon"><use href="#i-clipboard"></use></svg>Pengajuan</span>
           {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
         </a>
+        <a class="side-link" href="{{ url_for('denda.daftar_denda') }}">
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-coins"></use></svg>Denda</span>
+        </a>
         <div class="side-group">
           <button type="button" class="side-link side-group-toggle">
             <span class="side-link-main"><svg class="nav-icon"><use href="#i-bar-chart"></use></svg>Laporan</span>
             <svg class="side-caret"><use href="#i-chevron-down"></use></svg>
           </button>
           <div class="side-submenu">
+            <a href="{{ url_for('laporan.buku_terlambat') }}"><svg class="nav-icon"><use href="#i-alert"></use></svg>Buku Terlambat</a>
             <a href="{{ url_for('laporan.buku_populer') }}"><svg class="nav-icon"><use href="#i-flame"></use></svg>Buku Populer</a>
+            <a href="{{ url_for('laporan.mahasiswa_aktif') }}"><svg class="nav-icon"><use href="#i-users"></use></svg>Mahasiswa Aktif</a>
             <a href="{{ url_for('laporan.buku_tidak_populer') }}"><svg class="nav-icon"><use href="#i-trend-down"></use></svg>Buku Tidak Populer</a>
           </div>
         </div>
@@ -80,6 +87,9 @@
         </a>
         <a class="side-link" href="{{ url_for('auth.daftar_pengguna') }}">
           <span class="side-link-main"><svg class="nav-icon"><use href="#i-users"></use></svg>Pengguna</span>
+        </a>
+        <a class="side-link" href="{{ url_for('pengaturan.halaman') }}">
+          <span class="side-link-main"><svg class="nav-icon"><use href="#i-settings"></use></svg>Pengaturan</span>
         </a>
         <a class="side-link" href="{{ url_for('auth.daftar_persetujuan') }}">
           <span class="side-link-main"><svg class="nav-icon"><use href="#i-user-check"></use></svg>Persetujuan</span>
@@ -128,6 +138,7 @@
                 <a href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg>Daftar Buku</a>
                 <a href="{{ url_for('buku.kategori') }}"><svg class="nav-icon"><use href="#i-folder"></use></svg>Kategori</a>
                 <a href="{{ url_for('buku.import_excel') }}"><svg class="nav-icon"><use href="#i-upload"></use></svg>Import Excel</a>
+                <a href="{{ url_for('buku.ekspor_buku') }}"><svg class="nav-icon"><use href="#i-download"></use></svg>Ekspor Excel</a>
               </div>
             </div>
             <a class="nav-link" href="{{ url_for('peminjaman.daftar_peminjaman') }}"><svg class="nav-icon"><use href="#i-book-open"></use></svg>Peminjaman</a>
@@ -135,12 +146,15 @@
               <svg class="nav-icon"><use href="#i-clipboard"></use></svg>Pengajuan
               {% if jumlah_pengajuan_peminjaman %}<span class="badge badge-danger" style="margin-left:0.3rem;">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}
             </a>
+            <a class="nav-link" href="{{ url_for('denda.daftar_denda') }}"><svg class="nav-icon"><use href="#i-coins"></use></svg>Denda</a>
             <div class="nav-dropdown">
               <button type="button" class="nav-link nav-dropdown-toggle">
                 <svg class="nav-icon"><use href="#i-bar-chart"></use></svg>Laporan <svg class="nav-caret"><use href="#i-chevron-down"></use></svg>
               </button>
               <div class="nav-dropdown-menu">
+                <a href="{{ url_for('laporan.buku_terlambat') }}"><svg class="nav-icon"><use href="#i-alert"></use></svg>Buku Terlambat</a>
                 <a href="{{ url_for('laporan.buku_populer') }}"><svg class="nav-icon"><use href="#i-flame"></use></svg>Buku Populer</a>
+                <a href="{{ url_for('laporan.mahasiswa_aktif') }}"><svg class="nav-icon"><use href="#i-users"></use></svg>Mahasiswa Aktif</a>
                 <a href="{{ url_for('laporan.buku_tidak_populer') }}"><svg class="nav-icon"><use href="#i-trend-down"></use></svg>Buku Tidak Populer</a>
               </div>
             </div>
@@ -192,6 +206,47 @@
       &copy; {{ tahun_sekarang }} Perpustakaan STIKOM Kendari — dijalankan secara lokal.
     </div>
   </div>
+
+  {# ================= BOTTOM NAV (khusus HP, lihat mobile.css) ================= #}
+  {% if current_user.is_authenticated %}
+  <div class="sidebar-overlay" id="navOverlay" onclick="toggleMenuMobile()"></div>
+  <nav class="bottom-nav" aria-label="Menu utama">
+    <a href="{{ url_for('dashboard.index') }}"><svg class="nav-icon"><use href="#i-home"></use></svg><span>Beranda</span></a>
+    {% if current_user.is_mahasiswa %}
+      <a href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg><span>Buku</span></a>
+      <a href="{{ url_for('kartu.kartu_saya') }}"><svg class="nav-icon"><use href="#i-id-card"></use></svg><span>Kartu</span></a>
+      <a href="{{ url_for('peminjaman.riwayat_saya') }}"><svg class="nav-icon"><use href="#i-clock"></use></svg><span>Riwayat</span></a>
+    {% else %}
+      <a href="{{ url_for('buku.daftar_buku') }}"><svg class="nav-icon"><use href="#i-book"></use></svg><span>Buku</span></a>
+      <a href="{{ url_for('peminjaman.daftar_peminjaman') }}"><svg class="nav-icon"><use href="#i-book-open"></use></svg><span>Pinjam</span></a>
+      <a href="{{ url_for('peminjaman.daftar_pengajuan') }}"><svg class="nav-icon"><use href="#i-clipboard"></use></svg><span>Pengajuan</span>{% if jumlah_pengajuan_peminjaman %}<span class="bn-badge">{{ jumlah_pengajuan_peminjaman }}</span>{% endif %}</a>
+      <button type="button" onclick="toggleMenuMobile()" aria-label="Buka menu lengkap"><svg class="nav-icon"><use href="#i-menu"></use></svg><span>Menu</span></button>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  <script>
+    /* ---------------- TABEL -> KARTU DI HP ----------------
+       Beri label kolom pada tiap sel supaya mobile.css bisa menampilkan
+       "LABEL: isi" per baris. Di desktop tabel tetap tampil normal. */
+    (function () {
+      document.querySelectorAll('.table-scroll table:not(.tabel-excel)').forEach(function (tabel) {
+        var judul = Array.prototype.map.call(tabel.querySelectorAll('thead th'), function (th) { return th.textContent.trim(); });
+        if (!judul.length) return;
+        tabel.classList.add('tbl-stack');
+        tabel.querySelectorAll('tbody tr').forEach(function (tr) {
+          Array.prototype.forEach.call(tr.children, function (td, i) {
+            if (td.colSpan > 1) { td.classList.add('tbl-empty'); return; }
+            if (judul[i]) td.setAttribute('data-label', judul[i]);
+            var bungkus = document.createElement('span');
+            bungkus.className = 'cell-v';
+            while (td.firstChild) bungkus.appendChild(td.firstChild);
+            td.appendChild(bungkus);
+          });
+        });
+      });
+    })();
+  </script>
 
   <script>
     /* ---------------- TOMBOL LIHAT PASSWORD ----------------
@@ -283,6 +338,8 @@
       } else {
         var navLinks = document.getElementById('navLinks');
         if (navLinks) navLinks.classList.toggle('open');
+        var navOverlay = document.getElementById('navOverlay');
+        if (navOverlay) navOverlay.classList.toggle('open', navLinks && navLinks.classList.contains('open'));
       }
     }
 
@@ -302,6 +359,11 @@
         }
       });
 
+      // tandai tab aktif di bottom nav (HP)
+      document.querySelectorAll('.bottom-nav a').forEach(function (a) {
+        if (a.getAttribute('href') === path) a.classList.add('active');
+      });
+
       // tandai link menu yang sedang aktif di sidebar (operator), termasuk submenu
       document.querySelectorAll('.sidebar-nav a').forEach(function (a) {
         if (a.getAttribute('href') === path) {
@@ -319,6 +381,8 @@
         a.addEventListener('click', function () {
           var navLinks = document.getElementById('navLinks');
           if (navLinks) navLinks.classList.remove('open');
+          var navOv = document.getElementById('navOverlay');
+          if (navOv) navOv.classList.remove('open');
           var sidebar = document.getElementById('sidebarOperator');
           if (sidebar && window.innerWidth <= 900) {
             sidebar.classList.remove('open');
@@ -353,7 +417,7 @@
       });
 
       // notifikasi flash otomatis hilang setelah beberapa detik
-      document.querySelectorAll('.flash').forEach(function (el) {
+      document.querySelectorAll('.flash:not(.no-auto-hide)').forEach(function (el) {
         setTimeout(function () {
           el.style.transition = 'opacity 0.4s ease';
           el.style.opacity = '0';

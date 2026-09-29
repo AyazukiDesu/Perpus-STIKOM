@@ -23,7 +23,7 @@
 
 <form method="GET" class="search-bar">
   <input type="hidden" name="status" value="{{ status_filter }}">
-  <input type="text" name="q" placeholder="Cari nama/username/NISN mahasiswa atau judul buku..." value="{{ q }}">
+  <input type="text" name="q" placeholder="Cari nama/username/NIM mahasiswa atau judul buku..." value="{{ q }}">
   <button class="btn" type="submit">Cari</button>
   {% if q %}<a href="{{ url_for('peminjaman.daftar_peminjaman', status=status_filter) }}" class="btn btn-ghost">Reset</a>{% endif %}
 </form>
@@ -32,7 +32,7 @@
   <div class="table-scroll">
   <table>
     <thead>
-      <tr><th>Mahasiswa</th><th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Aksi</th></tr>
+      <tr><th>Mahasiswa</th><th>Buku</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Tgl Kembali</th><th>Status</th><th>Denda</th><th>Aksi</th></tr>
     </thead>
     <tbody>
       {% for p in daftar %}
@@ -40,7 +40,7 @@
         <td>{{ p.anggota.nama_lengkap }}</td>
         <td>{{ p.buku.judul }}</td>
         <td>{{ p.tanggal_pinjam.strftime('%d-%m-%Y') }}</td>
-        <td>{{ p.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}</td>
+        <td>{{ p.tanggal_jatuh_tempo.strftime('%d-%m-%Y') }}{% if p.jumlah_perpanjang %}<br><small style="color:var(--muted);">diperpanjang {{ p.jumlah_perpanjang }}x</small>{% endif %}</td>
         <td>{{ p.tanggal_kembali.strftime('%d-%m-%Y') if p.tanggal_kembali else '-' }}</td>
         <td>
           {% if p.status == 'dikembalikan' %}
@@ -50,7 +50,7 @@
           {% elif p.status == 'ditolak' %}
             <span class="badge badge-danger">Ditolak</span>
           {% elif p.is_telat %}
-            <span class="badge badge-danger">Terlambat</span>
+            <span class="badge badge-danger">Terlambat {{ p.hari_telat }} hari</span>
           {% elif p.hari_menuju_jatuh_tempo is not none and p.hari_menuju_jatuh_tempo <= config.PERINGATAN_JATUH_TEMPO_HARI %}
             <span class="badge badge-warning">⏰ Segera Tempo ({{ p.hari_menuju_jatuh_tempo }}h)</span>
           {% else %}
@@ -58,18 +58,46 @@
           {% endif %}
         </td>
         <td>
+          {% set d = denda_sekarang(p) %}
+          {% if d > 0 %}
+            <strong>{{ d|rupiah }}</strong>
+            {% if p.status == 'dipinjam' %}<br><small style="color:var(--muted);">berjalan</small>
+            {% elif p.status_denda == 'belum_lunas' %}<br><span class="badge badge-danger">Belum lunas</span>
+            {% elif p.status_denda == 'lunas' %}<br><span class="badge badge-success">Lunas</span>
+            {% elif p.status_denda == 'dibebaskan' %}<br><span class="badge badge-info">Dibebaskan</span>{% endif %}
+          {% else %}-{% endif %}
+        </td>
+        <td>
           {% if p.status == 'dipinjam' %}
+          <div class="aksi-baris">
           <form method="POST" action="{{ url_for('peminjaman.kembalikan_buku', peminjaman_id=p.id) }}"
                 onsubmit="return confirm('Konfirmasi pengembalian buku ini?');">
             <button class="btn btn-sm btn-success" type="submit"><svg class="icon"><use href="#i-check"></use></svg> Kembalikan</button>
+            {% if denda_sekarang(p) > 0 %}<button class="btn btn-sm btn-accent" type="submit" name="bayar" value="1">Kembalikan &amp; Lunasi</button>{% endif %}
           </form>
+          {% if p.hari_telat == 0 and p.jumlah_perpanjang < config.MAKS_PERPANJANG %}
+          <form method="POST" action="{{ url_for('peminjaman.perpanjang', peminjaman_id=p.id) }}"
+                onsubmit="return confirm('Perpanjang jatuh tempo buku ini?');">
+            <button class="btn btn-sm" type="submit"><svg class="icon"><use href="#i-clock"></use></svg> Perpanjang</button>
+          </form>
+          {% endif %}
+          {% if current_user.is_kepala %}
+          <details class="aksi-atur">
+            <summary class="btn btn-sm"><svg class="icon"><use href="#i-pen"></use></svg> Atur Tempo</summary>
+            <form method="POST" action="{{ url_for('peminjaman.atur_jatuh_tempo', peminjaman_id=p.id) }}">
+              <input type="date" name="tanggal" value="{{ p.tanggal_jatuh_tempo.isoformat() }}" min="{{ p.tanggal_pinjam.isoformat() }}" required>
+              <button class="btn btn-sm btn-accent" type="submit">Simpan</button>
+            </form>
+          </details>
+          {% endif %}
+          </div>
           {% elif p.status == 'diajukan' %}
             <a href="{{ url_for('peminjaman.daftar_pengajuan') }}" class="btn btn-sm btn-accent">Tinjau</a>
           {% endif %}
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="7">Tidak ada data.</td></tr>
+      <tr><td colspan="8">Tidak ada data.</td></tr>
       {% endfor %}
     </tbody>
   </table>

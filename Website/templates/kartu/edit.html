@@ -8,8 +8,8 @@
   </p>
   <form method="POST">
     <div class="form-group">
-      <label>NISN (ID Kartu) {% if pemilik.is_mahasiswa %}<small style="color:var(--muted);">wajib, {{ config.NISN_PANJANG }} digit</small>{% else %}<small style="color:var(--muted);">opsional</small>{% endif %}</label>
-      <input type="text" name="nisn" value="{{ pemilik.nisn or '' }}" inputmode="numeric" maxlength="{{ config.NISN_PANJANG }}" pattern="[0-9]*" {{ 'required' if pemilik.is_mahasiswa }}>
+      <label>NIM (ID Kartu) {% if pemilik.is_mahasiswa %}<small style="color:var(--muted);">wajib, {{ config.NIM_PANJANG_MIN }}-{{ config.NIM_PANJANG_MAKS }} digit</small>{% else %}<small style="color:var(--muted);">opsional</small>{% endif %}</label>
+      <input type="text" name="nim" value="{{ pemilik.nim or '' }}" inputmode="numeric" maxlength="{{ config.NIM_PANJANG_MAKS }}" pattern="[0-9]*" {{ 'required' if pemilik.is_mahasiswa }}>
     </div>
     <div class="form-group">
       <label>Tanggal Terbit</label>

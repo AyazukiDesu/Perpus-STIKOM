@@ -43,6 +43,15 @@
       <input type="number" name="stok" min="0" value="{{ buku.stok if buku else 0 }}">
     </div>
     <div class="form-group">
+      <label>Lokasi Rak</label>
+      <input type="text" name="lokasi_rak" maxlength="50" placeholder="mis. Rak A-3" value="{{ buku.lokasi_rak if buku and buku.lokasi_rak else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Lama Pinjam Khusus Buku Ini (hari)</label>
+      <input type="number" name="lama_pinjam_hari" min="1" max="365" placeholder="Kosongkan = ikut pengaturan umum ({{ config.LAMA_PINJAM_HARI }} hari)" value="{{ buku.lama_pinjam_hari if buku and buku.lama_pinjam_hari else '' }}">
+      <p class="sampul-hint">Contoh: isi 3 untuk buku referensi/favorit yang cepat habis.</p>
+    </div>
+    <div class="form-group">
       <label>Deskripsi</label>
       <textarea name="deskripsi" rows="3">{{ buku.deskripsi if buku else '' }}</textarea>
     </div>

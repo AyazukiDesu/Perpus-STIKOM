@@ -23,9 +23,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     nama_lengkap = db.Column(db.String(150), nullable=False)
-    # NISN (10 digit). Wajib untuk mahasiswa; opsional untuk staf/kepala perpustakaan.
-    # NISN inilah yang dipakai sebagai nomor/ID kartu perpustakaan.
-    nisn = db.Column(db.String(20), unique=True, nullable=True)
+    # NIM (Nomor Induk Mahasiswa). Wajib untuk mahasiswa; opsional untuk staf/kepala perpustakaan.
+    # NIM inilah yang dipakai sebagai nomor/ID kartu perpustakaan.
+    nim = db.Column(db.String(20), unique=True, nullable=True)
     role = db.Column(
         db.Enum("mahasiswa", "staf", "kepala_perpustakaan", name="role_enum"),
         nullable=False,
@@ -104,9 +104,9 @@ class KartuAnggota(db.Model):
     status = db.Column(db.Enum("aktif", "nonaktif", name="status_kartu_enum"), default="aktif")
 
     @property
-    def nisn(self):
-        """ID kartu = NISN pemilik kartu (satu sumber data: users.nisn)."""
-        return self.pemilik.nisn
+    def nim(self):
+        """ID kartu = NIM pemilik kartu (satu sumber data: users.nim)."""
+        return self.pemilik.nim
 
     @property
     def is_kadaluarsa(self):
@@ -140,9 +140,14 @@ class Buku(db.Model):
     deskripsi = db.Column(db.Text)
     stok = db.Column(db.Integer, default=0)
     sampul_path = db.Column(db.String(255))
+    # Lokasi fisik buku di rak (mis. "Rak A-3") - membantu staf mencari buku.
+    lokasi_rak = db.Column(db.String(50))
+    # Lama pinjam khusus buku ini (hari). Kosong = ikut pengaturan umum.
+    lama_pinjam_hari = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     peminjaman_list = db.relationship("Peminjaman", backref="buku", cascade="all, delete-orphan")
+    log_stok_list = db.relationship("LogStok", backref="buku", cascade="all, delete-orphan")
 
     @property
     def total_dipinjam(self):
@@ -173,6 +178,34 @@ class Peminjaman(db.Model):
     # agar anggota tahu alasannya.
     catatan = db.Column(db.String(255))
 
+    # ---- Denda keterlambatan ----
+    # 'denda' baru diisi (dibekukan) saat buku dikembalikan. Selama masih dipinjam,
+    # denda dihitung berjalan lewat utils.denda.denda_peminjaman().
+    denda = db.Column(db.Integer, nullable=False, default=0)
+    # 'tidak_ada' -> tidak ada denda | 'belum_lunas' -> menunggu dibayar
+    # 'lunas' -> sudah dibayar | 'dibebaskan' -> dihapus oleh kepala perpustakaan
+    status_denda = db.Column(
+        db.Enum("tidak_ada", "belum_lunas", "lunas", "dibebaskan", name="status_denda_enum"),
+        nullable=False,
+        default="tidak_ada",
+    )
+    tanggal_denda_selesai = db.Column(db.Date)   # tanggal dibayar / dibebaskan
+    denda_diproses_oleh = db.Column(db.Integer, db.ForeignKey("users.id"))
+    catatan_denda = db.Column(db.String(255))
+    # Berapa kali jatuh tempo sudah diperpanjang.
+    jumlah_perpanjang = db.Column(db.Integer, nullable=False, default=0)
+
+    @property
+    def hari_telat(self):
+        """Jumlah hari melewati jatuh tempo (0 jika belum/tidak telat)."""
+        if self.status == "dikembalikan" and self.tanggal_kembali:
+            akhir = self.tanggal_kembali
+        elif self.status == "dipinjam":
+            akhir = date.today()
+        else:
+            return 0
+        return max(0, (akhir - self.tanggal_jatuh_tempo).days)
+
     @property
     def is_telat(self):
         if self.status in ("dikembalikan", "diajukan", "ditolak"):
@@ -192,3 +225,27 @@ class Peminjaman(db.Model):
         if self.status != "dipinjam":
             return None
         return (self.tanggal_jatuh_tempo - date.today()).days
+
+
+class Pengaturan(db.Model):
+    """Pengaturan perpustakaan (key-value) yang bisa diubah kepala perpustakaan
+    lewat halaman Pengaturan: lama pinjam, tarif denda, dsb."""
+    __tablename__ = "pengaturan"
+
+    kunci = db.Column(db.String(50), primary_key=True)
+    nilai = db.Column(db.String(100), nullable=False)
+
+
+class LogStok(db.Model):
+    """Catatan setiap perubahan stok manual (tambah stok, buku rusak/hilang, dll.)."""
+    __tablename__ = "log_stok"
+
+    id = db.Column(db.Integer, primary_key=True)
+    buku_id = db.Column(db.Integer, db.ForeignKey("buku.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    perubahan = db.Column(db.Integer, nullable=False)       # + tambah / - kurang
+    stok_sesudah = db.Column(db.Integer, nullable=False)
+    alasan = db.Column(db.String(100), nullable=False)
+    waktu = db.Column(db.DateTime, default=datetime.now)  # waktu lokal komputer server
+
+    petugas = db.relationship("User", foreign_keys=[user_id])

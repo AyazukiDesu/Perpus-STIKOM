@@ -1,0 +1,52 @@
+{% extends "layout/base.html" %}
+{% block title %}Pengaturan Perpustakaan{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h2><svg class="icon"><use href="#i-settings"></use></svg> Pengaturan Perpustakaan</h2>
+  <p class="page-sub">Atur lama peminjaman, tarif denda, dan aturan lainnya. Perubahan berlaku untuk peminjaman berikutnya.</p>
+</div>
+
+<form method="POST">
+  <div class="card">
+    <h3 style="margin-top:0;">Jatuh tempo &amp; peminjaman</h3>
+    {% for f in kolom if f.kunci in ['lama_pinjam_hari', 'maks_pinjam', 'maks_perpanjang', 'peringatan_hari'] %}
+      {{ baris(f) }}
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Denda keterlambatan</h3>
+    {% for f in kolom if f.kunci in ['denda_per_hari', 'denda_maks', 'masa_tenggang_hari', 'blokir_jika_denda'] %}
+      {{ baris(f) }}
+    {% endfor %}
+    <p class="page-sub" style="margin-top:0.8rem;">
+      Contoh: tarif Rp 1.000/hari, tenggang 0 hari → buku telat 5 hari didenda Rp 5.000.
+      Denda buku yang masih dipinjam dihitung berjalan setiap hari, lalu dibekukan saat buku dikembalikan.
+    </p>
+  </div>
+
+  <button class="btn" type="submit">Simpan Pengaturan</button>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-ghost">Batal</a>
+</form>
+{% endblock %}
+
+{# satu baris pengaturan: label + isian + satuan + penjelasan #}
+{% macro baris(f) %}
+<div class="setting-row">
+  <div class="setting-label">
+    <label for="f_{{ f.kunci }}">{{ f.label }}</label>
+    <small>{{ f.bantuan }}</small>
+  </div>
+  <div class="setting-input">
+    {% if f.kunci == 'blokir_jika_denda' %}
+      <select id="f_{{ f.kunci }}" name="{{ f.kunci }}">
+        <option value="1" {{ 'selected' if f.nilai == 1 }}>Ya, blokir</option>
+        <option value="0" {{ 'selected' if f.nilai == 0 }}>Tidak</option>
+      </select>
+    {% else %}
+      <input id="f_{{ f.kunci }}" type="number" name="{{ f.kunci }}" min="{{ f.min }}" max="{{ f.maks }}" value="{{ f.nilai }}" required inputmode="numeric">
+      <span class="setting-satuan">{{ f.satuan }}</span>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}

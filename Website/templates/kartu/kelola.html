@@ -3,11 +3,11 @@
 {% block content %}
 <div class="page-head">
   <h2><svg class="icon"><use href="#i-id-card"></use></svg> Kelola Kartu Perpustakaan</h2>
-  <p class="page-sub">Atur NISN (ID kartu), masa berlaku, dan status kartu. Kartu nonaktif atau kadaluarsa tidak dapat dipakai untuk meminjam buku.</p>
+  <p class="page-sub">Atur NIM (ID kartu), masa berlaku, dan status kartu. Kartu nonaktif atau kadaluarsa tidak dapat dipakai untuk meminjam buku.</p>
 </div>
 
 <form method="GET" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
-  <input type="text" name="q" placeholder="Cari nama / username / NISN..." value="{{ q }}" style="flex:1; min-width:220px;">
+  <input type="text" name="q" placeholder="Cari nama / username / NIM..." value="{{ q }}" style="flex:1; min-width:220px;">
   <select name="status">
     <option value="semua" {{ 'selected' if filter_status == 'semua' }}>Semua status</option>
     <option value="aktif" {{ 'selected' if filter_status == 'aktif' }}>Aktif</option>
@@ -22,12 +22,12 @@
   <div class="table-scroll">
   <table>
     <thead>
-      <tr><th>NISN</th><th>Nama</th><th>Role</th><th>Terbit</th><th>Berlaku s.d.</th><th>Status</th><th>Aksi</th></tr>
+      <tr><th>NIM</th><th>Nama</th><th>Role</th><th>Terbit</th><th>Berlaku s.d.</th><th>Status</th><th>Aksi</th></tr>
     </thead>
     <tbody>
     {% for k in daftar %}
       <tr>
-        <td>{{ k.nisn or '-' }}</td>
+        <td>{{ k.nim or '-' }}</td>
         <td>{{ k.pemilik.nama_lengkap }}<br><small style="color:var(--muted);">{{ k.pemilik.username }}</small></td>
         <td>{{ k.pemilik.role_label }}</td>
         <td>{{ k.tanggal_terbit.strftime('%d-%m-%Y') }}</td>
@@ -36,7 +36,7 @@
           {% if k.is_kadaluarsa %}<span class="badge badge-danger">Kadaluarsa</span>
           {% elif k.status == 'aktif' %}<span class="badge badge-success">Aktif</span>
           {% else %}<span class="badge badge-danger">Nonaktif</span>{% endif %}
-          {% if not k.nisn %}<span class="badge badge-warning">NISN kosong</span>{% endif %}
+          {% if not k.nim %}<span class="badge badge-warning">NIM kosong</span>{% endif %}
         </td>
         <td>
           <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
@@ -66,12 +66,12 @@
 <div class="card">
   <div class="table-scroll">
   <table>
-    <thead><tr><th>Nama</th><th>NISN</th><th>Role</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Nama</th><th>NIM</th><th>Role</th><th>Aksi</th></tr></thead>
     <tbody>
     {% for u in tanpa_kartu %}
       <tr>
         <td>{{ u.nama_lengkap }}</td>
-        <td>{{ u.nisn or '-' }}</td>
+        <td>{{ u.nim or '-' }}</td>
         <td>{{ u.role_label }}</td>
         <td>
           <form method="POST" action="{{ url_for('kartu.terbitkan_kartu', user_id=u.id) }}" style="display:inline;">

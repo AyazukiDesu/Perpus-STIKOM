@@ -1,0 +1,213 @@
+/* =========================================================
+   mobile.css - tampilan HP (dimuat SETELAH style.css)
+   - Bottom navigation bar (tab bawah) per role
+   - Tabel otomatis berubah jadi kartu (label diisi via JS di base.html)
+   - Menu staf jadi drawer geser dari kiri
+   - Tombol & input nyaman disentuh (>= 44px, font 16px anti-zoom iOS)
+   Semua warna memakai variabel tema, jadi dark mode ikut otomatis.
+   ========================================================= */
+
+.bottom-nav { display: none; }
+.detail-buku { display: flex; gap: 1.5rem; }
+
+/* ---------- Drawer menu staf (<= 860px) ---------- */
+@media (max-width: 860px) {
+  .navbar-links {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: min(82vw, 300px);
+    margin: 0;
+    padding: 1rem 0.6rem calc(1rem + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem;
+    background: var(--primary-dark);
+    border-top: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    overflow-y: auto;
+    z-index: 160;
+    transform: translateX(-105%);
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0s linear 0.22s;
+  }
+  .navbar-links.open {
+    transform: none; visibility: visible;
+    transition: transform 0.22s ease;
+    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.35);
+  }
+  .navbar-links a, .nav-link { padding: 0.75rem 0.7rem; font-size: 0.92rem; }
+  #navOverlay { z-index: 90; }
+}
+
+/* ---------- Layar HP (<= 700px) ---------- */
+@media (max-width: 700px) {
+  :root { --bn-h: 60px; }
+
+  body[class*="role-"] { padding-bottom: calc(var(--bn-h) + env(safe-area-inset-bottom)); }
+  body[class*="role-"] .hamburger, body.guest .hamburger { display: none; }
+
+  /* Navbar ringkas */
+  .navbar {
+    flex-wrap: nowrap;
+    padding: 0.5rem 0.8rem;
+    padding-top: calc(0.5rem + env(safe-area-inset-top));
+  }
+  .navbar-left { min-width: 0; flex: 1; }
+  .navbar .brand { min-width: 0; font-size: 0.9rem; }
+  .navbar .brand span { overflow: hidden; text-overflow: ellipsis; }
+  .navbar-right { gap: 0.4rem; flex-shrink: 0; }
+  .theme-toggle, .navbar .btn-logout { width: 38px; height: 38px; padding: 0; justify-content: center; }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    display: flex;
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 95;
+    padding: 0 0.25rem env(safe-area-inset-bottom);
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(30, 20, 16, 0.08);
+  }
+  .bottom-nav a, .bottom-nav button {
+    position: relative;
+    flex: 1; min-width: 0; height: var(--bn-h);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem;
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); text-decoration: none;
+    font-family: inherit; font-size: 0.68rem; font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav .nav-icon { width: 1.4rem; height: 1.4rem; }
+  .bottom-nav a.active { color: var(--primary); }
+  [data-theme="dark"] .bottom-nav a.active { color: var(--accent); }
+  .bottom-nav a.active::before {
+    content: ""; position: absolute; top: 0; left: 30%; right: 30%;
+    height: 3px; border-radius: 0 0 3px 3px; background: currentColor;
+  }
+  .bn-badge {
+    position: absolute; top: 0.45rem; left: calc(50% + 0.4rem);
+    min-width: 1.05rem; height: 1.05rem; padding: 0 0.3rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 999px; background: var(--danger-solid); color: #fff;
+    font-size: 0.62rem; font-weight: 700;
+  }
+
+  /* Ukuran & jarak */
+  .container { padding: 0 0.8rem; margin: 0.9rem auto; }
+  h2, .page-head h2 { font-size: 1.3rem; line-height: 1.25; }
+  .card { padding: 1rem; border-radius: 14px; }
+  .hero { border-radius: 16px; }
+  .grid-3 { gap: 0.7rem; }
+  .footer { padding: 1rem 1rem 1.5rem; font-size: 0.74rem; }
+
+  /* Sentuhan nyaman */
+  input, select, textarea { font-size: 16px; min-height: 44px; }
+  textarea { min-height: 88px; }
+  .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
+  .btn.btn-sm { min-height: 38px; }
+  .btn.btn-icon { width: 38px; height: 38px; min-height: 0; }
+  .card form .form-group ~ .btn { width: 100%; margin-top: 0.4rem; }
+
+  /* Pencarian & filter */
+  .search-bar { flex-direction: row !important; flex-wrap: wrap; gap: 0.45rem; }
+  .search-bar .search-field, .search-bar input, .search-bar select { flex: 1 1 100%; width: 100%; }
+  .search-bar .btn { width: auto; flex: 1 1 auto; }
+  .search-bar > a.btn { flex: 1 1 100%; }
+  .search-bar .chip { flex: 0 0 auto; }
+  .kategori-chips {
+    flex-wrap: nowrap; overflow-x: auto; margin: 0 -0.8rem 1.2rem; padding: 0 0.8rem 0.4rem;
+    scrollbar-width: none; scroll-snap-type: x proximity;
+  }
+  .kategori-chips::-webkit-scrollbar { display: none; }
+  .kategori-chips .chip { flex: 0 0 auto; scroll-snap-align: start; }
+
+  /* Kartu buku */
+  .buku-card { border-radius: 14px; }
+  .buku-card-cover { margin: 0.45rem 0.45rem 0; border-radius: 10px; box-shadow: 0 4px 10px rgba(30, 20, 16, 0.2); }
+  .buku-card-cover::before { display: none; }
+  .buku-card-actions .btn { min-height: 38px; }
+
+  /* Pengajuan, kartu anggota */
+  .pengajuan-grid { grid-template-columns: 1fr; }
+  .pengajuan-actions .btn, .kartu-wrap-actions .btn { flex: 1 1 auto; min-height: 40px; }
+
+  /* Detail buku: susun vertikal */
+  .detail-buku { flex-direction: column; gap: 1rem; }
+  .detail-buku > div:first-child { align-self: center; }
+  .detail-buku .btn { display: flex; width: 100%; margin-top: 0.5rem; }
+
+  /* Login / registrasi */
+  .card[style*="margin:2rem auto"] { margin: 1rem auto !important; }
+
+  /* Modal crop sampul jadi bottom sheet */
+  .crop-modal { align-items: flex-end; padding: 0; }
+  .crop-modal-box { max-width: none; border-radius: 18px 18px 0 0; padding: 1.1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
+  .crop-modal-actions .btn { flex: 1; }
+
+  /* ---------- TABEL -> KARTU ---------- */
+  .card:has(.tbl-stack) { background: transparent; border: none; box-shadow: none; padding: 0; }
+  .tbl-stack { min-width: 0 !important; margin: 0; }
+  .tbl-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .tbl-stack, .tbl-stack tbody, .tbl-stack tr, .tbl-stack td { display: block; width: 100%; }
+  .tbl-stack tr, .tbl-stack tbody tr:hover {
+    background: var(--card-bg);
+  }
+  .tbl-stack tr {
+    border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 0.3rem 0.95rem; margin-bottom: 0.75rem; overflow: hidden;
+  }
+  .tbl-stack td {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: 0.55rem 0; border-bottom: 1px dashed var(--border);
+    font-size: 0.86rem; text-align: right;
+  }
+  .tbl-stack td:last-child { border-bottom: none; }
+  .tbl-stack td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 36%; max-width: 36%; text-align: left;
+    color: var(--muted); font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .cell-v { min-width: 0; overflow-wrap: anywhere; }
+  /* sel pertama = judul kartu */
+  .tbl-stack td:first-child {
+    justify-content: flex-start; text-align: left;
+    font-weight: 700; font-size: 0.95rem; padding-top: 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .tbl-stack td:first-child::before { display: none; }
+  /* sel aksi: tombol memenuhi lebar kartu */
+  .tbl-stack td[data-label="Aksi"] { display: block; text-align: left; padding: 0.7rem 0 0.5rem; }
+  .tbl-stack td[data-label="Aksi"]::before { display: none; }
+  .tbl-stack td[data-label="Aksi"] .cell-v { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tbl-stack td form { display: inline-block; margin: 0; }
+  .tbl-stack td .btn.btn-sm { min-height: 38px; padding: 0.4rem 0.85rem; }
+  .tbl-stack td.tbl-empty { display: block; text-align: center; color: var(--muted); padding: 1.2rem 0; }
+  .tbl-stack td.tbl-empty::before { display: none; }
+
+  /* Denda, pengaturan, stok */
+  .setting-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .setting-input { flex-shrink: 1; }
+  .setting-input input, .setting-input select { width: 100%; flex: 1; text-align: left; }
+  .form-stok { width: 100%; }
+  .form-stok input { flex: 0 0 5.5rem; width: 5.5rem; }
+  .form-stok select { flex: 1 1 8rem; min-width: 0; }
+  .form-stok .btn { flex: 1 1 100%; }
+  .aksi-atur { display: block; width: 100%; }
+  .aksi-atur form { position: static; margin-top: 0.4rem; box-shadow: none; flex-wrap: wrap; }
+  .aksi-atur input[type="date"] { flex: 1; min-width: 0; }
+  .tbl-stack td .aksi-baris { width: 100%; }
+  .tbl-stack td .aksi-baris form { display: flex; flex: 1 1 auto; gap: 0.4rem; }
+  .tbl-stack td .aksi-baris form .btn { flex: 1; }
+  .stat-box .angka.angka-rp { font-size: 1.05rem; }
+  .pengajuan-actions form { width: 100%; }
+  .pengajuan-actions form .btn { flex: 1; }
+
+  /* Tabel mode profesional (Excel) tetap geser, beri petunjuk */
+  .excel-card .table-scroll { max-height: 65vh; }
+}
+
+/* Layar sentuh: matikan efek "naik" saat hover */
+@media (hover: none) {
+  .card:hover, .stat-box:hover, .kategori-card:hover, .pengajuan-card:hover, .buku-card:hover {
+    transform: none; box-shadow: var(--shadow);
+  }
+}

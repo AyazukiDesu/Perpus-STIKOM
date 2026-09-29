@@ -10,9 +10,14 @@
       <select name="user_id" required>
         <option value="">- Pilih Mahasiswa -</option>
         {% for a in anggota_list %}
-          <option value="{{ a.id }}">{{ a.nama_lengkap }} ({{ a.nisn or a.username }}) — kuota {{ a.jumlah_pinjaman_aktif }}/{{ config.MAKS_PINJAM_PER_USER }}</option>
+          <option value="{{ a.id }}">{{ a.nama_lengkap }} ({{ a.nim or a.username }}) — kuota {{ a.jumlah_pinjaman_aktif }}/{{ config.MAKS_PINJAM_PER_USER }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div class="form-group">
+      <label>Lama pinjam (hari)</label>
+      <input type="number" name="lama_hari" min="1" max="365" value="{{ lama_default }}" inputmode="numeric">
+      <p class="sampul-hint">Jatuh tempo = hari ini + lama pinjam. Nilai awal mengikuti {{ 'pengaturan khusus buku ini' if buku.lama_pinjam_hari else 'pengaturan umum perpustakaan' }}. Denda: {{ config.DENDA_PER_HARI|rupiah }}/hari setelah jatuh tempo.</p>
     </div>
     <button class="btn" type="submit">Proses Peminjaman</button>
     <a href="{{ url_for('buku.detail_buku', buku_id=buku.id) }}" class="btn btn-ghost">Batal</a>

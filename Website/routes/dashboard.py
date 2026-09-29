@@ -5,6 +5,8 @@ from sqlalchemy import func
 
 from extensions import db
 from models import Buku, Peminjaman, User, Kategori
+from utils.denda import denda_berjalan_semua, total_denda_belum_lunas
+from routes.laporan import statistik_mahasiswa_peminjam
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -90,6 +92,8 @@ def index():
         ).all()
         context["pinjaman_aktif"] = pinjaman_aktif
         context["jumlah_terlambat_saya"] = sum(1 for p in pinjaman_aktif if p.is_telat)
+        context["denda_berjalan_saya"] = denda_berjalan_semua(current_user.id)
+        context["denda_belum_lunas_saya"] = total_denda_belum_lunas(current_user.id)
 
         # peringatan "akan jatuh tempo" (belum telat, tapi tinggal beberapa hari lagi)
         batas_peringatan = current_app.config["PERINGATAN_JATUH_TEMPO_HARI"]
@@ -133,6 +137,10 @@ def index():
             1 for p in Peminjaman.query.filter_by(status="dipinjam").all() if p.is_telat
         )
 
+        # denda: hal yang perlu perhatian petugas
+        context["denda_belum_lunas"] = total_denda_belum_lunas()
+        context["denda_berjalan"] = denda_berjalan_semua()
+
         # grafik: tren peminjaman 6 bulan terakhir
         labels_bulanan, data_bulanan = _data_grafik_peminjaman_bulanan()
         context["labels_grafik_bulanan"] = labels_bulanan
@@ -142,6 +150,11 @@ def index():
         labels_top, data_top = _data_grafik_buku_terpopuler()
         context["labels_grafik_top_buku"] = labels_top
         context["data_grafik_top_buku"] = data_top
+
+        # grafik: mahasiswa paling sering meminjam (semua waktu, top 5)
+        top_mhs = statistik_mahasiswa_peminjam("semua", limit=5)
+        context["labels_grafik_top_mhs"] = [b["user"].nama_lengkap for b in top_mhs]
+        context["data_grafik_top_mhs"] = [b["total"] for b in top_mhs]
 
         # grafik: distribusi buku per kategori
         labels_kat, data_kat = _data_grafik_distribusi_kategori()

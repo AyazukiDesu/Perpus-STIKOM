@@ -14,14 +14,14 @@
   <div class="table-scroll">
   <table>
     <thead>
-      <tr><th>Nama</th><th>Username</th><th>NISN</th><th>Email</th><th>Role</th><th>Persetujuan</th><th>Status</th><th>Aksi</th></tr>
+      <tr><th>Nama</th><th>Username</th><th>NIM</th><th>Email</th><th>Role</th><th>Persetujuan</th><th>Status</th><th>Aksi</th></tr>
     </thead>
     <tbody>
       {% for u in pengguna %}
       <tr>
         <td>{{ u.nama_lengkap }}</td>
         <td>{{ u.username }}</td>
-        <td>{{ u.nisn or '-' }}</td>
+        <td>{{ u.nim or '-' }}</td>
         <td>{{ u.email }}</td>
         <td>{{ u.role_label }}</td>
         <td>

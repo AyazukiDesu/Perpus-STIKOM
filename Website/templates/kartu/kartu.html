@@ -10,8 +10,8 @@
   <span class="role-pita">{{ anggota.role_label }}</span>
   <img src="{{ url_for('static', filename='img/logo_stikom.png') }}" alt="Logo" class="logo-kecil">
   <div class="label">Kartu Perpustakaan STIKOM Kendari</div>
-  <div class="label" style="margin-top:0.4rem;">NISN</div>
-  <div class="nomor">{{ kartu.nisn or '-' }}</div>
+  <div class="label" style="margin-top:0.4rem;">NIM</div>
+  <div class="nomor">{{ kartu.nim or '-' }}</div>
   <div style="font-size:1.05rem; margin-bottom:0.5rem;">{{ anggota.nama_lengkap }}</div>
   <div style="font-size:0.8rem; opacity:0.85;">
     Terbit: {{ kartu.tanggal_terbit.strftime('%d-%m-%Y') }} &nbsp;|&nbsp;

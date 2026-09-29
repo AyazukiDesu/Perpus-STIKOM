@@ -13,9 +13,9 @@
       <input type="text" name="nama_lengkap" required>
     </div>
     <div class="form-group">
-      <label>NISN</label>
-      <input type="text" name="nisn" inputmode="numeric" minlength="{{ config.NISN_PANJANG }}" maxlength="{{ config.NISN_PANJANG }}" pattern="[0-9]+" required>
-      <small style="font-size:0.78rem; color:var(--muted);">NISN akan menjadi ID kartu perpustakaan Anda.</small>
+      <label>NIM</label>
+      <input type="text" name="nim" inputmode="numeric" minlength="{{ config.NIM_PANJANG_MIN }}" maxlength="{{ config.NIM_PANJANG_MAKS }}" pattern="[0-9]+" required>
+      <small style="font-size:0.78rem; color:var(--muted);">NIM akan menjadi ID kartu perpustakaan Anda ({{ config.NIM_PANJANG_MIN }}-{{ config.NIM_PANJANG_MAKS }} digit angka).</small>
     </div>
     <div class="form-group">
       <label>Username</label>

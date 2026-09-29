@@ -4,7 +4,7 @@
 <h2>Riwayat Peminjaman - {{ buku.judul }}</h2>
 
 <form method="GET" class="search-bar">
-  <input type="text" name="q" placeholder="Cari nama/username/NISN mahasiswa..." value="{{ q }}">
+  <input type="text" name="q" placeholder="Cari nama/username/NIM mahasiswa..." value="{{ q }}">
   <button class="btn" type="submit">Cari</button>
   {% if q %}<a href="{{ url_for(request.endpoint, **request.view_args) }}" class="btn btn-ghost">Reset</a>{% endif %}
 </form>

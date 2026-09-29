@@ -6,7 +6,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from extensions import db
 from models import User, KartuAnggota, Peminjaman
 from utils.decorators import role_required
-from utils.kartu import validasi_nisn, terbitkan_kartu_jika_belum_ada as _terbitkan_kartu_jika_belum_ada
+from utils.kartu import validasi_nim, terbitkan_kartu_jika_belum_ada as _terbitkan_kartu_jika_belum_ada
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -30,7 +30,7 @@ def register():
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()
         nama_lengkap = request.form.get("nama_lengkap", "").strip()
-        nisn_input = request.form.get("nisn", "")
+        nim_input = request.form.get("nim", "")
         password = request.form.get("password", "")
         password2 = request.form.get("password2", "")
 
@@ -50,7 +50,7 @@ def register():
             flash("Domain email tidak diizinkan. Gunakan email pribadi yang umum (gmail, yahoo, outlook, dsb).", "danger")
             return redirect(url_for("auth.register"))
 
-        nisn, err = validasi_nisn(nisn_input, wajib=True)
+        nim, err = validasi_nim(nim_input, wajib=True)
         if err:
             flash(err, "danger")
             return redirect(url_for("auth.register"))
@@ -67,7 +67,7 @@ def register():
             username=username,
             email=email,
             nama_lengkap=nama_lengkap,
-            nisn=nisn,
+            nim=nim,
             role="mahasiswa",
             status_akun="pending",
         )
@@ -99,11 +99,11 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        # Login bisa memakai USERNAME atau NISN. Username dicocokkan lebih dulu;
-        # jika tidak ada yang cocok, baru dicoba sebagai NISN (NISN bersifat unik).
+        # Login bisa memakai USERNAME atau NIM. Username dicocokkan lebih dulu;
+        # jika tidak ada yang cocok, baru dicoba sebagai NIM (NIM bersifat unik).
         user = User.query.filter_by(username=username).first()
         if user is None and username:
-            user = User.query.filter_by(nisn=username).first()
+            user = User.query.filter_by(nim=username).first()
         if user and user.check_password(password):
             if user.menunggu_persetujuan:
                 flash(
@@ -125,7 +125,7 @@ def login():
             login_user(user)
             flash(f"Selamat datang, {user.nama_lengkap}!", "success")
             return redirect(url_for("dashboard.index"))
-        flash("Username/NISN atau password salah.", "danger")
+        flash("Username/NIM atau password salah.", "danger")
 
     return render_template("auth/login.html")
 
@@ -159,7 +159,7 @@ def tambah_pengguna():
         nama_lengkap = request.form.get("nama_lengkap", "").strip()
         password = request.form.get("password", "")
         role = request.form.get("role", "staf")
-        nisn_input = request.form.get("nisn", "")
+        nim_input = request.form.get("nim", "")
 
         if role not in ("mahasiswa", "staf", "kepala_perpustakaan"):
             flash("Role tidak valid.", "danger")
@@ -169,8 +169,8 @@ def tambah_pengguna():
             flash("Password minimal 6 karakter.", "danger")
             return redirect(url_for("auth.tambah_pengguna"))
 
-        # NISN wajib untuk mahasiswa, opsional untuk staf / kepala perpustakaan
-        nisn, err = validasi_nisn(nisn_input, wajib=(role == "mahasiswa"))
+        # NIM wajib untuk mahasiswa, opsional untuk staf / kepala perpustakaan
+        nim, err = validasi_nim(nim_input, wajib=(role == "mahasiswa"))
         if err:
             flash(err, "danger")
             return redirect(url_for("auth.tambah_pengguna"))
@@ -194,7 +194,7 @@ def tambah_pengguna():
         # tidak perlu melalui alur persetujuan seperti registrasi mandiri.
         user = User(
             username=username, email=email, nama_lengkap=nama_lengkap,
-            nisn=nisn, role=role, status_akun="disetujui",
+            nim=nim, role=role, status_akun="disetujui",
         )
         user.set_password(password)
         db.session.add(user)
@@ -252,7 +252,7 @@ def edit_pengguna(user_id):
         no_telepon = request.form.get("no_telepon", "").strip()
         alamat = request.form.get("alamat", "").strip()
         role = request.form.get("role", user.role)
-        nisn_input = request.form.get("nisn", "")
+        nim_input = request.form.get("nim", "")
         password_baru = request.form.get("password", "")
         password_baru2 = request.form.get("password2", "")
 
@@ -274,7 +274,7 @@ def edit_pengguna(user_id):
             flash("Role tidak valid.", "danger")
             return redirect(url_for("auth.edit_pengguna", user_id=user.id))
 
-        nisn, err = validasi_nisn(nisn_input, wajib=(role == "mahasiswa"), abaikan_user_id=user.id)
+        nim, err = validasi_nim(nim_input, wajib=(role == "mahasiswa"), abaikan_user_id=user.id)
         if err:
             flash(err, "danger")
             return redirect(url_for("auth.edit_pengguna", user_id=user.id))
@@ -302,7 +302,7 @@ def edit_pengguna(user_id):
         user.nama_lengkap = nama_lengkap
         user.no_telepon = no_telepon or None
         user.alamat = alamat or None
-        user.nisn = nisn
+        user.nim = nim
         user.role = role
 
         if password_baru:

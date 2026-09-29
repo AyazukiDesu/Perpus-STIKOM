@@ -1,7 +1,7 @@
 {% extends "layout/base.html" %}
 {% block title %}{{ buku.judul }}{% endblock %}
 {% block content %}
-<div class="card" style="display:flex; gap:1.5rem;">
+<div class="card detail-buku">
   <div>
     {% if buku.sampul_path %}
       <img src="{{ url_for('static', filename=buku.sampul_path.replace('static/', '', 1)) }}" style="width:160px; border-radius:6px;">
@@ -16,6 +16,8 @@
     <p><strong>ISBN:</strong> {{ buku.isbn or '-' }}</p>
     <p><strong>Kategori:</strong> {{ buku.kategori.nama_kategori if buku.kategori else '-' }}</p>
     <p><strong>Stok tersedia:</strong> {{ buku.stok }}</p>
+    {% if buku.lokasi_rak %}<p><strong>Lokasi rak:</strong> {{ buku.lokasi_rak }}</p>{% endif %}
+    <p><strong>Lama pinjam:</strong> {{ buku.lama_pinjam_hari or config.LAMA_PINJAM_HARI }} hari{% if config.DENDA_PER_HARI > 0 %} · denda keterlambatan {{ config.DENDA_PER_HARI|rupiah }}/hari{% endif %}</p>
     <p>{{ buku.deskripsi or '' }}</p>
 
     {% if current_user.is_staf or current_user.is_kepala %}

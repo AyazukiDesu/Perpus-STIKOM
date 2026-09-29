@@ -26,6 +26,11 @@
         <div class="pengajuan-actions">
           <form method="POST" action="{{ url_for('peminjaman.setujui_pengajuan', peminjaman_id=p.id) }}"
                 onsubmit="return confirm('Setujui pengajuan ini? Stok buku akan berkurang 1.');">
+            <label class="lama-hari" title="Jatuh tempo = hari ini + lama pinjam">
+              <span>Pinjam</span>
+              <input type="number" name="lama_hari" min="1" max="365" value="{{ lama_pinjam_untuk(p.buku) }}" inputmode="numeric">
+              <span>hari</span>
+            </label>
             <button class="btn btn-sm btn-success" type="submit"><svg class="icon"><use href="#i-check"></use></svg> Setujui</button>
           </form>
           <button type="button" class="btn btn-sm btn-danger" onclick="bukaTolak({{ p.id }})"><svg class="icon"><use href="#i-x"></use></svg> Tolak</button>

@@ -15,6 +15,7 @@
   <button class="btn" type="submit">Cari</button>
   {% if current_user.is_staf or current_user.is_kepala %}
     <a href="{{ url_for('buku.tambah_buku') }}" class="btn btn-accent">+ Tambah Buku</a>
+    <a href="{{ url_for('buku.ekspor_buku') }}" class="btn btn-ghost"><svg class="icon"><use href="#i-download"></use></svg> Ekspor Excel</a>
   {% endif %}
 </form>
 
@@ -59,7 +60,7 @@
                   <span class="cover-ket">Tanpa sampul</span>
                 </div>
               {% endif %}
-              <span class="buku-stok-badge {{ 'stok-habis' if b.stok == 0 else ('stok-tipis' if b.stok <= 2 else '') }}">
+              <span class="buku-stok-badge {{ 'stok-habis' if b.stok == 0 else '' }}">
                 {{ 'Kosong' if b.stok == 0 else b.stok ~ ' stok' }}
               </span>
             </a>
@@ -133,6 +134,7 @@
               <th>Tahun</th>
               <th>ISBN</th>
               <th>Kategori</th>
+              <th>Lokasi Rak</th>
               <th style="text-align:right;">Stok</th>
               <th>Aksi</th>
             </tr>
@@ -147,6 +149,7 @@
                 <td class="sel-angka">{{ b.tahun_terbit or '-' }}</td>
                 <td>{{ b.isbn or '-' }}</td>
                 <td>{{ b.kategori.nama_kategori if b.kategori else '-' }}</td>
+                <td>{{ b.lokasi_rak or '-' }}</td>
                 <td class="sel-angka">{{ b.stok }}</td>
                 <td class="sel-aksi">
                   <a href="{{ url_for('buku.edit_buku', buku_id=b.id) }}" class="btn btn-sm btn-icon" title="Edit" aria-label="Edit"><svg class="icon"><use href="#i-edit"></use></svg></a>

@@ -18,13 +18,13 @@
     <div class="table-scroll">
     <table>
       <thead>
-        <tr><th>Nama Lengkap</th><th>NISN</th><th>Username</th><th>Email</th><th>Daftar Pada</th><th>Aksi</th></tr>
+        <tr><th>Nama Lengkap</th><th>NIM</th><th>Username</th><th>Email</th><th>Daftar Pada</th><th>Aksi</th></tr>
       </thead>
       <tbody>
         {% for u in pending %}
         <tr>
           <td>{{ u.nama_lengkap }}</td>
-          <td>{{ u.nisn or '-' }}</td>
+          <td>{{ u.nim or '-' }}</td>
           <td>{{ u.username }}</td>
           <td>{{ u.email }}</td>
           <td>{{ u.created_at.strftime('%d-%m-%Y %H:%M') }}</td>

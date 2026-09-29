@@ -1,6 +1,49 @@
+from datetime import timedelta
+
 from flask import current_app
 
+from models import Peminjaman
+from utils.denda import denda_peminjaman, format_rupiah, total_denda_belum_lunas
 from utils.kartu import terbitkan_kartu_jika_belum_ada
+
+
+def lama_pinjam_untuk(buku, lama_hari=None):
+    """Tentukan lama pinjam (hari): isian petugas > pengaturan khusus buku > pengaturan umum."""
+    if lama_hari and lama_hari > 0:
+        return lama_hari
+    if buku is not None and buku.lama_pinjam_hari:
+        return buku.lama_pinjam_hari
+    return current_app.config["LAMA_PINJAM_HARI"]
+
+
+def hitung_jatuh_tempo(buku, mulai, lama_hari=None):
+    return mulai + timedelta(days=lama_pinjam_untuk(buku, lama_hari))
+
+
+def cek_tunggakan(mahasiswa):
+    """Jika pengaturan 'blokir jika ada denda' aktif: mahasiswa dengan buku terlambat
+    atau denda belum lunas tidak boleh meminjam lagi."""
+    if not current_app.config["BLOKIR_JIKA_DENDA"]:
+        return True, None
+
+    telat = [
+        p for p in Peminjaman.query.filter_by(user_id=mahasiswa.id, status="dipinjam").all()
+        if p.hari_telat > 0
+    ]
+    if telat:
+        return False, (
+            f"Masih ada {len(telat)} buku yang terlambat dikembalikan "
+            f"(denda berjalan {format_rupiah(sum(denda_peminjaman(p) for p in telat))}). "
+            "Kembalikan buku tersebut terlebih dahulu."
+        )
+
+    belum_lunas = total_denda_belum_lunas(mahasiswa.id)
+    if belum_lunas > 0:
+        return False, (
+            f"Ada denda belum lunas sebesar {format_rupiah(belum_lunas)}. "
+            "Lunasi denda di perpustakaan terlebih dahulu."
+        )
+    return True, None
 
 
 def cek_kartu_valid(mahasiswa):
@@ -29,8 +72,8 @@ def cek_kuota_pinjam(mahasiswa):
 
 
 def cek_bisa_meminjam(mahasiswa):
-    """Gabungan validasi kartu + kuota. Kembalikan (True, None) atau (False, pesan)."""
-    for cek in (cek_kartu_valid, cek_kuota_pinjam):
+    """Gabungan validasi kartu + tunggakan denda + kuota. Kembalikan (True, None) atau (False, pesan)."""
+    for cek in (cek_kartu_valid, cek_tunggakan, cek_kuota_pinjam):
         ok, pesan = cek(mahasiswa)
         if not ok:
             return False, pesan

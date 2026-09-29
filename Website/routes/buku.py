@@ -12,6 +12,7 @@ from extensions import db
 from models import Buku, Kategori, Peminjaman
 from utils.decorators import role_required
 from utils.excel_import import buat_template_excel, import_buku_dari_excel
+from utils.excel_export import buat_excel
 
 buku_bp = Blueprint("buku", __name__, url_prefix="/buku")
 
@@ -40,6 +41,21 @@ def _simpan_sampul(file_storage):
     # (bukan os.path.join) agar konsisten dipakai ulang oleh url_for('static', ...)
     # di semua template, terlepas dari OS server-nya.
     return f"uploads/sampul/{nama_aman}"  # contoh: uploads/sampul/xxxx.jpg
+
+
+def _isbn_duplikat(isbn, kecuali_id=None):
+    if not isbn:
+        return None
+    q = Buku.query.filter(Buku.isbn == isbn)
+    if kecuali_id:
+        q = q.filter(Buku.id != kecuali_id)
+    return q.first()
+
+
+def _lama_pinjam_form():
+    """Lama pinjam khusus buku (opsional): kosong = ikut pengaturan umum."""
+    nilai = request.form.get("lama_pinjam_hari", type=int)
+    return nilai if nilai and 1 <= nilai <= 365 else None
 
 
 # ------------------------------------------------------------------
@@ -132,10 +148,17 @@ def tambah_buku():
         isbn = request.form.get("isbn", "").strip()
         kategori_id = request.form.get("kategori_id", type=int)
         deskripsi = request.form.get("deskripsi", "").strip()
-        stok = request.form.get("stok", type=int, default=0)
+        stok = max(0, request.form.get("stok", type=int, default=0) or 0)
+        lokasi_rak = request.form.get("lokasi_rak", "").strip() or None
 
         if not judul or not penulis:
             flash("Judul dan penulis wajib diisi.", "danger")
+            return redirect(url_for("buku.tambah_buku"))
+
+        ada = _isbn_duplikat(isbn)
+        if ada:
+            flash(f"ISBN {isbn} sudah terdaftar untuk buku '{ada.judul}'. "
+                  "Jika ini eksemplar tambahan, tambahkan stok pada buku tersebut.", "warning")
             return redirect(url_for("buku.tambah_buku"))
 
         sampul_path = _simpan_sampul(request.files.get("sampul"))
@@ -143,7 +166,8 @@ def tambah_buku():
         buku = Buku(
             judul=judul, penulis=penulis, penerbit=penerbit or None,
             tahun_terbit=tahun_terbit, isbn=isbn or None, kategori_id=kategori_id or None,
-            deskripsi=deskripsi or None, stok=stok or 0, sampul_path=sampul_path,
+            deskripsi=deskripsi or None, stok=stok, sampul_path=sampul_path,
+            lokasi_rak=lokasi_rak, lama_pinjam_hari=_lama_pinjam_form(),
         )
         db.session.add(buku)
         db.session.commit()
@@ -161,6 +185,12 @@ def edit_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
 
     if request.method == "POST":
+        isbn_baru = request.form.get("isbn", "").strip()
+        ada = _isbn_duplikat(isbn_baru, kecuali_id=buku.id)
+        if ada:
+            flash(f"ISBN {isbn_baru} sudah dipakai buku '{ada.judul}'.", "warning")
+            return redirect(url_for("buku.edit_buku", buku_id=buku.id))
+
         buku.judul = request.form.get("judul", "").strip()
         buku.penulis = request.form.get("penulis", "").strip()
         buku.penerbit = request.form.get("penerbit", "").strip() or None
@@ -168,7 +198,9 @@ def edit_buku(buku_id):
         buku.isbn = request.form.get("isbn", "").strip() or None
         buku.kategori_id = request.form.get("kategori_id", type=int) or None
         buku.deskripsi = request.form.get("deskripsi", "").strip() or None
-        buku.stok = request.form.get("stok", type=int, default=0)
+        buku.stok = max(0, request.form.get("stok", type=int, default=0) or 0)
+        buku.lokasi_rak = request.form.get("lokasi_rak", "").strip() or None
+        buku.lama_pinjam_hari = _lama_pinjam_form()
 
         sampul_baru = _simpan_sampul(request.files.get("sampul"))
         if sampul_baru:
@@ -210,6 +242,30 @@ def hapus_buku(buku_id):
     db.session.commit()
     flash(f"Buku '{judul}' berhasil dihapus.", "success")
     return redirect(url_for("buku.daftar_buku"))
+
+
+@buku_bp.route("/ekspor")
+@login_required
+@role_required("staf", "kepala_perpustakaan")
+def ekspor_buku():
+    """Unduh seluruh koleksi buku ke Excel (format kolom sama seperti template import)."""
+    from datetime import date
+    daftar = Buku.query.order_by(Buku.judul).all()
+    baris = [
+        [b.judul, b.penulis, b.penerbit or "", b.tahun_terbit or "", b.isbn or "",
+         b.kategori.nama_kategori if b.kategori else "", b.stok, b.lokasi_rak or "",
+         b.lama_pinjam_hari or ""]
+        for b in daftar
+    ]
+    buffer = buat_excel(
+        "Koleksi Buku",
+        ["Judul", "Penulis", "Penerbit", "Tahun", "ISBN", "Kategori", "Stok", "Lokasi Rak", "Lama Pinjam (hari)"],
+        baris,
+    )
+    return send_file(
+        buffer, as_attachment=True, download_name=f"koleksi_buku_{date.today().isoformat()}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 # ------------------------------------------------------------------

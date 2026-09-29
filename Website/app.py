@@ -23,6 +23,20 @@ def create_app():
     # pastikan folder upload ada
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
+    # ---- Pengaturan dari database + helper tampilan denda ----
+    from utils.pengaturan import terapkan_pengaturan
+    from utils.denda import denda_peminjaman, format_rupiah
+    from flask import request
+
+    @app.before_request
+    def muat_pengaturan():
+        # Salin pengaturan (lama pinjam, tarif denda, dst.) dari DB ke app.config.
+        if request.endpoint != "static":
+            terapkan_pengaturan(app)
+
+    app.jinja_env.filters["rupiah"] = format_rupiah
+    app.jinja_env.globals["denda_sekarang"] = denda_peminjaman
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -64,6 +78,8 @@ def create_app():
     from routes.peminjaman import peminjaman_bp
     from routes.laporan import laporan_bp
     from routes.kartu import kartu_bp
+    from routes.denda import denda_bp
+    from routes.pengaturan import pengaturan_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -71,10 +87,12 @@ def create_app():
     app.register_blueprint(peminjaman_bp)
     app.register_blueprint(laporan_bp)
     app.register_blueprint(kartu_bp)
+    app.register_blueprint(denda_bp)
+    app.register_blueprint(pengaturan_bp)
 
     return app
 
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="20.20.20.254", port=5000)
