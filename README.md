@@ -50,17 +50,11 @@
 
 **Tentang Dokumen Ini**
 
-> **Pembaruan versi 6:** dokumentasi ini ditambah katalog bedah kode
-> untuk setiap fungsi/metode Python yang ditemukan dalam ZIP. Penjelasan
-> baris-per-baris merujuk pada nomor baris file asli; kode tidak diubah
-> oleh proses dokumentasi ini.
-
 Dokumen ini menjelaskan aplikasi web **Perpus STIKOM** secara bertahap:
 mulai dari gambaran umum, cara memasang dan memakai, struktur database,
-sampai penjelasan fungsi secara menyeluruh dan panduan membangun ulang aplikasi. Disusun agar pemula bisa
-belajar dari atas ke bawah tanpa melompat-lompat.
+sampai penjelasan fungsi secara menyeluruh dan panduan membangun ulang aplikasi.
 
-**Cocok untuk:** mahasiswa/pemula yang baru belajar Flask, calon
+**Cocok untuk:** pemula yang baru belajar Flask, calon
 pengelola sistem, dan pengembang yang akan melanjutkan proyek. **Yang
 sebaiknya sudah diketahui:** dasar Python (fungsi, class, dictionary)
 dan HTML sederhana. SQL dijelaskan di Bab 6.
