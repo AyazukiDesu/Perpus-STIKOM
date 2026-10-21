@@ -2,8 +2,7 @@
 
 **Perpus STIKOM --- Aplikasi Perpustakaan Berbasis Flask dan MySQL**
 
-*Panduan setup, pemakaian, dan penjelasan kode untuk pemula* · Versi 6 — Panduan Rekonstruksi ·
-22 Oktober 2026
+*Panduan setup, pemakaian, dan penjelasan kode untuk pemula* ·
 
 ------------------------------------------------------------------------
 
